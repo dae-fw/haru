@@ -152,7 +152,7 @@ select {
 }
 
 .shell {
-  max-width: 480px;
+  max-width: var(--shell-w, 480px);
   margin: 0 auto;
   height: 100dvh;
   display: flex;
@@ -870,7 +870,7 @@ button.title-edit {
 .sheet {
   position: relative;
   width: 100%;
-  max-width: 480px;
+  max-width: var(--shell-w, 480px);
   background: var(--surface);
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
@@ -1091,6 +1091,8 @@ button.title-edit {
   padding: 0 3px;
 }
 
+/* Mobile is the baseline above this line. Wider viewports get more room —
+   same layout, same components, just less cramped — never a desktop redesign. */
 @media (min-width: 540px) {
   body {
     padding: 24px 0;
@@ -1100,6 +1102,25 @@ button.title-edit {
     border: 1px solid var(--hair);
     border-radius: 22px;
     box-shadow: var(--shadow);
+  }
+}
+@media (min-width: 720px) {
+  :root {
+    --shell-w: 560px;
+  }
+}
+@media (min-width: 1000px) {
+  :root {
+    --shell-w: 660px;
+  }
+  .body {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+}
+@media (min-width: 1280px) {
+  :root {
+    --shell-w: 740px;
   }
 }
 

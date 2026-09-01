@@ -215,10 +215,22 @@ export async function disconnectGoogle() {
   revalidatePath("/settings");
 }
 
+export async function setAppearance(patch: {
+  palette?: "a" | "b" | "c";
+  theme?: "light" | "dark" | "system";
+}) {
+  const { user, supabase } = await requireUser();
+  const current = (user.user_metadata ?? {}) as Record<string, unknown>;
+  await supabase.auth.updateUser({
+    data: { ...current, ...patch },
+  });
+}
+
 export async function setNickname(formData: FormData) {
-  const { supabase } = await requireUser();
+  const { user, supabase } = await requireUser();
   const nickname = String(formData.get("nickname") ?? "").trim().slice(0, 40);
-  await supabase.auth.updateUser({ data: { nickname: nickname || null } });
+  const current = (user.user_metadata ?? {}) as Record<string, unknown>;
+  await supabase.auth.updateUser({ data: { ...current, nickname: nickname || null } });
   revalidatePath("/");
   revalidatePath("/settings");
 }
