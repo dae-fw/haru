@@ -10,6 +10,7 @@ import { getTodayEvents, type CalEvent } from "@/lib/google";
 import { getTimeZone, hourInTz, timeInTz, todayInTz } from "@/lib/tz";
 import { unparkTodo } from "@/app/(app)/actions";
 import TodoRow from "@/components/TodoRow";
+import QuickAddTodo from "@/components/QuickAddTodo";
 import PlanLink from "@/components/PlanLink";
 import Gear from "@/components/Gear";
 import type { Project, Todo } from "@/lib/types";
@@ -136,6 +137,8 @@ export default async function TodayPage() {
             )}
           </div>
         )}
+
+        <QuickAddTodo />
 
         {(above > 0 || below > 0) && (
           <ul className="list">
