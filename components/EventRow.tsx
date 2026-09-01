@@ -24,6 +24,7 @@ export default function EventRow({
         <div className="title">{event.title}</div>
         <div className="meta">
           <span className="chip">calendar</span>
+          {event.location && <span className="chip">📍 {event.location}</span>}
         </div>
       </button>
       {edit && <EditEventSheet event={event} tz={tz} onClose={() => setEdit(false)} />}

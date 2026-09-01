@@ -198,7 +198,12 @@ export async function deleteIdea(id: string) {
 }
 
 /** Create a calendar event from the app. */
-export async function createEvent(input: { title: string; start: string; end: string }) {
+export async function createEvent(input: {
+  title: string;
+  start: string;
+  end: string;
+  location?: string;
+}) {
   await requireUser();
   const ok = await createCalendarEvent(input);
   if (ok) revalidateAll();
@@ -208,7 +213,7 @@ export async function createEvent(input: { title: string; start: string; end: st
 /** Rename / reschedule a calendar event from the app. No delete — see build brief. */
 export async function updateEvent(
   id: string,
-  patch: { title?: string; start?: string; end?: string },
+  patch: { title?: string; start?: string; end?: string; location?: string },
 ) {
   await requireUser();
   const ok = await updateCalendarEvent(id, patch);

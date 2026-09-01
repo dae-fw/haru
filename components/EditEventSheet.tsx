@@ -15,6 +15,7 @@ export default function EditEventSheet({
   onClose: () => void;
 }) {
   const [title, setTitle] = useState(event.title);
+  const [location, setLocation] = useState(event.location ?? "");
   const [start, setStart] = useState(() => toLocalInput(event.start, tz));
   const [end, setEnd] = useState(() => toLocalInput(event.end, tz));
   const [pending, start_] = useTransition();
@@ -35,6 +36,7 @@ export default function EditEventSheet({
     start_(async () => {
       const ok = await updateEvent(event.id, {
         title,
+        location: location.trim(),
         ...(event.allDay
           ? {}
           : { start: fromLocalInput(start, tz), end: fromLocalInput(end, tz) }),
@@ -75,13 +77,32 @@ export default function EditEventSheet({
           </>
         )}
 
+        <label className="sec">Location</label>
+        <input
+          style={field}
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="Optional — an address or a name"
+        />
+
         {error && (
           <div style={{ color: "var(--crit)", fontSize: "0.8rem", marginTop: 10 }}>
             Couldn&apos;t save that — try again.
           </div>
         )}
 
-        <div style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginTop: 14 }}>
+        {event.htmlLink && (
+          <a
+            href={event.htmlLink}
+            target="_blank"
+            rel="noreferrer"
+            style={{ display: "block", marginTop: 14, fontSize: "0.8rem", color: "var(--accent)" }}
+          >
+            Open in Google Calendar ↗
+          </a>
+        )}
+
+        <div style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginTop: 8 }}>
           No delete here by design — remove events directly in Google Calendar.
         </div>
 

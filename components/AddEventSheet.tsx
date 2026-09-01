@@ -14,6 +14,7 @@ function defaultTimes(tz: string): { start: string; end: string } {
 
 export default function AddEventSheet({ tz, onClose }: { tz: string; onClose: () => void }) {
   const [title, setTitle] = useState("");
+  const [location, setLocation] = useState("");
   const [times] = useState(() => defaultTimes(tz));
   const [start, setStart] = useState(times.start);
   const [end, setEnd] = useState(times.end);
@@ -37,6 +38,7 @@ export default function AddEventSheet({ tz, onClose }: { tz: string; onClose: ()
         title: title.trim(),
         start: fromLocalInput(start, tz),
         end: fromLocalInput(end, tz),
+        location: location.trim() || undefined,
       });
       if (ok) onClose();
       else setError(true);
@@ -74,6 +76,14 @@ export default function AddEventSheet({ tz, onClose }: { tz: string; onClose: ()
           style={field}
           value={end}
           onChange={(e) => setEnd(e.target.value)}
+        />
+
+        <label className="sec">Location</label>
+        <input
+          style={field}
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="Optional — an address or a name"
         />
 
         {error && (

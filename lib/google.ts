@@ -17,6 +17,7 @@ export interface CalEvent {
   start: string; // ISO
   end: string; // ISO
   allDay: boolean;
+  location?: string;
   htmlLink?: string;
 }
 
@@ -80,6 +81,7 @@ async function accessToken(): Promise<string | null> {
 function normalize(e: {
   id: string;
   summary?: string;
+  location?: string;
   htmlLink?: string;
   start: { dateTime?: string; date?: string };
   end: { dateTime?: string; date?: string };
@@ -91,6 +93,7 @@ function normalize(e: {
     start: e.start.dateTime ?? `${e.start.date}T00:00:00`,
     end: e.end.dateTime ?? `${e.end.date}T00:00:00`,
     allDay,
+    location: e.location || undefined,
     htmlLink: e.htmlLink,
   };
 }
@@ -132,11 +135,12 @@ export const getTodayEvents = cache(async (tz: string = "UTC"): Promise<CalEvent
   return (json.items ?? []).map(normalize);
 });
 
-/** For the Plan chat (step 3). */
+/** For the Plan chat (step 3) and the Add-event sheet. */
 export async function createCalendarEvent(input: {
   title: string;
   start: string;
   end: string;
+  location?: string;
 }): Promise<CalEvent | null> {
   const token = await accessToken();
   if (!token) return null;
@@ -147,6 +151,7 @@ export async function createCalendarEvent(input: {
       summary: input.title,
       start: { dateTime: input.start },
       end: { dateTime: input.end },
+      ...(input.location ? { location: input.location } : {}),
     }),
   });
   if (!res.ok) {
@@ -159,7 +164,7 @@ export async function createCalendarEvent(input: {
 /** Rename and/or reschedule an event. No delete — see build brief (too risky as a side effect). */
 export async function updateCalendarEvent(
   id: string,
-  input: { title?: string; start?: string; end?: string },
+  input: { title?: string; start?: string; end?: string; location?: string },
 ): Promise<CalEvent | null> {
   const token = await accessToken();
   if (!token) return null;
@@ -167,6 +172,7 @@ export async function updateCalendarEvent(
   if (input.title !== undefined) body.summary = input.title;
   if (input.start !== undefined) body.start = { dateTime: input.start };
   if (input.end !== undefined) body.end = { dateTime: input.end };
+  if (input.location !== undefined) body.location = input.location;
   const res = await fetch(`${CAL_BASE}/events/${id}`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
