@@ -404,6 +404,18 @@ select {
   color: var(--ink-soft);
   background-size: 100% 1.5px;
 }
+button.event-edit {
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
 button.title-edit {
   border: none;
   background: transparent;

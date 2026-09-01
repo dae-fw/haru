@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { getOpenTodos, getProjects } from "@/lib/data";
 import { getTodayEvents, isGoogleConnected } from "@/lib/google";
-import { getTimeZone } from "@/lib/tz";
+import { getTimeZone } from "@/lib/tz.server";
 import { openingMessage, type PlanContext } from "@/lib/plan";
 import PlanChat from "@/components/PlanChat";
 import Gear from "@/components/Gear";

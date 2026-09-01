@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { getOpenTodos, isOnToday } from "@/lib/data";
-import { getTimeZone, todayInTz } from "@/lib/tz";
+import { todayInTz } from "@/lib/tz";
+import { getTimeZone } from "@/lib/tz.server";
 import TabBar from "@/components/TabBar";
 import TzSync from "@/components/TzSync";
 

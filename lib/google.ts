@@ -156,23 +156,29 @@ export async function createCalendarEvent(input: {
   return normalize(await res.json());
 }
 
-export async function moveCalendarEvent(
+/** Rename and/or reschedule an event. No delete — see build brief (too risky as a side effect). */
+export async function updateCalendarEvent(
   id: string,
-  input: { start: string; end: string },
+  input: { title?: string; start?: string; end?: string },
 ): Promise<CalEvent | null> {
   const token = await accessToken();
   if (!token) return null;
+  const body: Record<string, unknown> = {};
+  if (input.title !== undefined) body.summary = input.title;
+  if (input.start !== undefined) body.start = { dateTime: input.start };
+  if (input.end !== undefined) body.end = { dateTime: input.end };
   const res = await fetch(`${CAL_BASE}/events/${id}`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      start: { dateTime: input.start },
-      end: { dateTime: input.end },
-    }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
-    console.error("google move event failed", await res.text());
+    console.error("google update event failed", await res.text());
     return null;
   }
   return normalize(await res.json());
 }
+
+/** @deprecated use updateCalendarEvent */
+export const moveCalendarEvent = (id: string, input: { start: string; end: string }) =>
+  updateCalendarEvent(id, input);

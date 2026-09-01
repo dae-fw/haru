@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { getOpenTodos, getProjects } from "@/lib/data";
 import { getTodayEvents, isGoogleConnected, createCalendarEvent, moveCalendarEvent } from "@/lib/google";
-import { getTimeZone } from "@/lib/tz";
+import { getTimeZone } from "@/lib/tz.server";
 import { buildSystemPrompt, PLAN_MODEL, type PlanContext } from "@/lib/plan";
 import {
   completeTodo,

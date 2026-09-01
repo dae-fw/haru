@@ -6,10 +6,12 @@ import {
   isOnToday,
   isWaiting,
 } from "@/lib/data";
-import { getTodayEvents, type CalEvent } from "@/lib/google";
-import { getTimeZone, hourInTz, timeInTz, todayInTz } from "@/lib/tz";
+import { getTodayEvents } from "@/lib/google";
+import { hourInTz, todayInTz } from "@/lib/tz";
+import { getTimeZone } from "@/lib/tz.server";
 import { unparkTodo } from "@/app/(app)/actions";
 import TodoRow from "@/components/TodoRow";
+import EventRow from "@/components/EventRow";
 import QuickAddTodo from "@/components/QuickAddTodo";
 import PlanLink from "@/components/PlanLink";
 import Gear from "@/components/Gear";
@@ -58,20 +60,6 @@ function rank(t: Todo, today: string): number {
   return 2;
 }
 
-function EventRow({ e, past, tz }: { e: CalEvent; past?: boolean; tz: string }) {
-  const when = e.allDay ? "all day" : timeInTz(e.start, tz);
-  return (
-    <li className={`row event${past ? " past" : ""}`}>
-      <span className="when">{when}</span>
-      <div className="main">
-        <div className="title">{e.title}</div>
-        <div className="meta">
-          <span className="chip">calendar</span>
-        </div>
-      </div>
-    </li>
-  );
-}
 
 export default async function TodayPage() {
   const { user } = await requireUser();
@@ -168,7 +156,7 @@ export default async function TodayPage() {
         {(above > 0 || below > 0) && (
           <ul className="list">
             {pastEvents.map((e) => (
-              <EventRow key={e.id} e={e} past tz={tz} />
+              <EventRow key={e.id} event={e} past tz={tz} />
             ))}
             {overdue.map((t) => (
               <TodoRow
@@ -186,7 +174,7 @@ export default async function TodayPage() {
               </div>
             )}
             {upcomingEvents.map((e) => (
-              <EventRow key={e.id} e={e} tz={tz} />
+              <EventRow key={e.id} event={e} tz={tz} />
             ))}
             {rest.map((t) => (
               <TodoRow

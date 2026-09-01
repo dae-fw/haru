@@ -14,7 +14,7 @@ function todayLocalISO() {
 
 export default function QuickAddTodo({
   projects = [],
-  placeholder = "Add a task…  “call dentist friday #Personal !”",
+  placeholder = "Add a task…",
 }: {
   projects?: Project[];
   placeholder?: string;
