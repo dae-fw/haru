@@ -37,26 +37,30 @@ Shared `auth.users` is fine — the `HARU_ALLOWED_EMAIL` gate keeps Haru single-
 
 ### 2. Create your login
 
-Email + password auth is on by default in every Supabase project — nothing to configure.
+Password auth is on by default in every Supabase project — nothing to configure. Supabase
+keys users by email, but you can use a **synthetic address** and log in with a plain username:
+the login form turns `dae` into `dae@haru.local` (`NEXT_PUBLIC_HARU_LOGIN_DOMAIN`).
 
 1. Supabase → **Authentication → Users → Add user**:
-   - Email: the same address as `HARU_ALLOWED_EMAIL`
-   - Set a password, and tick **Auto Confirm User**
-2. Supabase → **Authentication → Providers → Email**: make sure "Confirm email" is **off**
-   (or just rely on Auto Confirm above). No SMTP needed.
+   - Email: `dae@haru.local` (must match `HARU_ALLOWED_EMAIL`)
+   - Set a password, tick **Auto Confirm User**
+2. Supabase → **Authentication → Providers → Email**: "Confirm email" **off** (Auto Confirm covers it). No SMTP needed.
 
 That's the whole auth setup. No Google Cloud project, no OAuth client, no redirect URLs.
+(Prefer a real email? Use it for both the Supabase user and `HARU_ALLOWED_EMAIL`, and just
+type the full address on the login screen.)
 
 ### 3. Local env
 
 ```bash
 cp .env.example .env.local
-# fill in NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, HARU_ALLOWED_EMAIL
+# fill in NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+#         HARU_ALLOWED_EMAIL, NEXT_PUBLIC_HARU_LOGIN_DOMAIN
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000 → `/login` → sign in with the email + password you created.
+Open http://localhost:3000 → `/login` → sign in with your username + password.
 Only `HARU_ALLOWED_EMAIL` gets past the gate; any other account is signed out immediately.
 
 ### 4. Deploy to Vercel

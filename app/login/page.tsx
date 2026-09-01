@@ -7,15 +7,19 @@ import { createClient } from "@/lib/supabase/client";
 function LoginCard() {
   const router = useRouter();
   const denied = useSearchParams().get("denied");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const domain = process.env.NEXT_PUBLIC_HARU_LOGIN_DOMAIN ?? "haru.local";
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const raw = username.trim();
+    const email = raw.includes("@") ? raw : `${raw}@${domain}`;
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
@@ -32,11 +36,13 @@ function LoginCard() {
       <h1>Haru</h1>
       <p>A calm plan for the day.</p>
       <input
-        type="email"
-        placeholder="Email"
+        type="text"
+        placeholder="Username"
         autoComplete="username"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        autoCapitalize="none"
+        spellCheck={false}
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
         required
         style={{ padding: "12px 14px", borderRadius: "var(--radius)", border: "1px solid var(--hair)", background: "var(--surface)" }}
       />
