@@ -34,15 +34,15 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() refreshes the session cookie if needed and verifies the JWT
+  // locally when asymmetric signing keys are enabled (no network round-trip).
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims as { email?: string } | undefined;
 
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path.startsWith(p));
 
-  // Signed in but not the allowed account -> kill the session.
-  if (user && ALLOWED && user.email?.toLowerCase() !== ALLOWED) {
+  if (claims && ALLOWED && claims.email?.toLowerCase() !== ALLOWED) {
     await supabase.auth.signOut();
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -50,15 +50,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Not signed in and asking for a protected page -> login.
-  if (!user && !isPublic) {
+  if (!claims && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // Already signed in and sitting on /login -> go home.
-  if (user && path === "/login") {
+  if (claims && path === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

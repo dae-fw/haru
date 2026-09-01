@@ -26,7 +26,10 @@ interface TokenRow {
   expires_at: string | null;
 }
 
+const CONFIGURED = !!process.env.GOOGLE_CLIENT_ID;
+
 export const isGoogleConnected = cache(async (): Promise<boolean> => {
+  if (!CONFIGURED) return false;
   const supabase = await createClient();
   const { data } = await supabase
     .from("haru_google_tokens")
@@ -93,6 +96,7 @@ function normalize(e: {
 }
 
 export const getTodayEvents = cache(async (): Promise<CalEvent[]> => {
+  if (!CONFIGURED) return [];
   const token = await accessToken();
   if (!token) return [];
   const now = new Date();

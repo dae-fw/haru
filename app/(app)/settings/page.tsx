@@ -3,6 +3,7 @@ import { getProjects } from "@/lib/data";
 import { isGoogleConnected } from "@/lib/google";
 import { addProject, disconnectGoogle, setNickname } from "@/app/(app)/actions";
 import ThemeControls from "@/components/ThemeControls";
+import { VERSION_LABEL } from "@/lib/version";
 
 export const dynamic = "force-dynamic";
 
@@ -135,6 +136,8 @@ export default async function SettingsPage({
             </button>
           </form>
         </div>
+
+        <div className="appfoot">Haru {VERSION_LABEL}</div>
       </div>
     </>
   );
