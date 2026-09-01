@@ -16,19 +16,20 @@ and Google sign-in. Calendar, the Plan chat, files, and Google Tasks sync come n
 
 ### 1. Supabase project
 
-You can **reuse an existing Supabase project** — Haru keeps all its tables in a dedicated
-`haru` Postgres schema, so it won't collide with anything already in `public`.
+You can **reuse an existing Supabase project**. Haru's tables live in the default `public`
+schema with a `haru_` prefix (`haru_projects`, `haru_todos`, `haru_ideas`), so they won't
+collide with anything already there and there's **no "Exposed schemas" setting to touch**.
 
 1. Create a project at https://supabase.com, or pick an existing one (free tier includes 2 projects).
-2. In **SQL Editor**, run `supabase/schema.sql` (creates the `haru` schema + tables + RLS).
-   Optionally run `supabase/seed.sql` for starter projects.
-3. **Project Settings → API → Exposed schemas**: add `haru` alongside `public`, and Save.
-   (Without this the API returns "schema must be one of the following" errors.)
-4. **Project Settings → API**: copy `Project URL` and `anon` key into `.env.local` (see below).
+2. In **SQL Editor**, run `supabase/schema.sql` (tables + RLS). Optionally run `supabase/seed.sql`.
+3. **Project Settings → API**: copy `Project URL` and `anon` key into `.env.local` (see below).
 
-Auth (`auth.users`), the Google provider, and the redirect-URL allowlist are **project-wide**,
-not per-schema — that's fine here. The `HARU_ALLOWED_EMAIL` gate keeps Haru single-user even
-if the shared project has other users.
+Auth (`auth.users`), the Google provider, and the redirect-URL allowlist are **project-wide** —
+that's fine here. The `HARU_ALLOWED_EMAIL` gate keeps Haru single-user even if the shared
+project has other users.
+
+> Ran an earlier version that made a `haru` schema? Drop it with
+> `drop schema if exists haru cascade;` before running the current `schema.sql`.
 
 ### 2. Google OAuth (via Supabase)
 
@@ -66,9 +67,7 @@ Only `HARU_ALLOWED_EMAIL` can get in; anyone else is signed out immediately.
 
 ## Data model
 
-All tables live in the **`haru`** schema (`haru.projects`, `haru.todos`, `haru.ideas`). The
-Supabase client is configured with `db: { schema: "haru" }`, so `.from("todos")` in the code
-resolves there automatically.
+Tables are in `public`, prefixed `haru_` (`haru_projects`, `haru_todos`, `haru_ideas`).
 
 - **projects** — `name`, `color`, `sort`
 - **todos** — `title`, `project_id`, `notes`, `due_date`, `status` (`open` / `done` / `waiting`),

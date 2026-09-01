@@ -5,7 +5,7 @@ import type { Idea, Project, Todo } from "@/lib/types";
 export async function getProjects(): Promise<Project[]> {
   const supabase = await createClient();
   const { data } = await supabase
-    .from("projects")
+    .from("haru_projects")
     .select("id, name, color, sort")
     .order("sort", { ascending: true })
     .order("created_at", { ascending: true });
@@ -15,7 +15,7 @@ export async function getProjects(): Promise<Project[]> {
 export async function getOpenTodos(): Promise<Todo[]> {
   const supabase = await createClient();
   const { data } = await supabase
-    .from("todos")
+    .from("haru_todos")
     .select("*")
     .in("status", ["open", "waiting"])
     .order("due_date", { ascending: true, nullsFirst: false })
@@ -27,7 +27,7 @@ export async function getDoneToday(): Promise<Todo[]> {
   const supabase = await createClient();
   const start = `${todayISO()}T00:00:00`;
   const { data } = await supabase
-    .from("todos")
+    .from("haru_todos")
     .select("*")
     .eq("status", "done")
     .gte("completed_at", start)
@@ -38,7 +38,7 @@ export async function getDoneToday(): Promise<Todo[]> {
 export async function getIdeas(): Promise<Idea[]> {
   const supabase = await createClient();
   const { data } = await supabase
-    .from("ideas")
+    .from("haru_ideas")
     .select("*")
     .order("created_at", { ascending: false });
   return (data as Idea[]) ?? [];

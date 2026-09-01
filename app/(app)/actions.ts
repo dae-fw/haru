@@ -20,7 +20,7 @@ export async function addTodo(formData: FormData) {
   const due = String(formData.get("due_date") ?? "") || null;
   const flagged = formData.get("flagged") === "on";
 
-  await supabase.from("todos").insert({
+  await supabase.from("haru_todos").insert({
     user_id: user.id,
     title,
     project_id: projectId,
@@ -32,19 +32,19 @@ export async function addTodo(formData: FormData) {
 
 export async function completeTodo(id: string) {
   const { supabase } = await requireUser();
-  const { data } = await supabase.from("todos").select("*").eq("id", id).single();
+  const { data } = await supabase.from("haru_todos").select("*").eq("id", id).single();
   const todo = data as Todo | null;
   if (!todo) return;
 
   await supabase
-    .from("todos")
+    .from("haru_todos")
     .update({ status: "done", completed_at: new Date().toISOString() })
     .eq("id", id);
 
   // Recurring -> spawn the next instance, carry the streak forward (+1).
   if (todo.recurrence) {
     const base = todo.due_date ?? toISODate(new Date());
-    await supabase.from("todos").insert({
+    await supabase.from("haru_todos").insert({
       user_id: todo.user_id,
       title: todo.title,
       project_id: todo.project_id,
@@ -62,7 +62,7 @@ export async function completeTodo(id: string) {
 export async function reopenTodo(id: string) {
   const { supabase } = await requireUser();
   await supabase
-    .from("todos")
+    .from("haru_todos")
     .update({ status: "open", completed_at: null })
     .eq("id", id);
   revalidateAll();
@@ -71,13 +71,13 @@ export async function reopenTodo(id: string) {
 /** "Skip this one" for a recurring todo: jump to the next instance, keep the streak. */
 export async function skipRecurrence(id: string) {
   const { supabase } = await requireUser();
-  const { data } = await supabase.from("todos").select("*").eq("id", id).single();
+  const { data } = await supabase.from("haru_todos").select("*").eq("id", id).single();
   const todo = data as Todo | null;
   if (!todo?.recurrence) return;
 
   const base = todo.due_date ?? toISODate(new Date());
   await supabase
-    .from("todos")
+    .from("haru_todos")
     .update({ due_date: nextDueDate(todo.recurrence as Recurrence, base) })
     .eq("id", id);
   revalidateAll();
@@ -86,7 +86,7 @@ export async function skipRecurrence(id: string) {
 export async function rescheduleTodo(id: string, dueDate: string) {
   const { supabase } = await requireUser();
   await supabase
-    .from("todos")
+    .from("haru_todos")
     .update({ due_date: dueDate, status: "open", wake_at: null, waiting_on: null })
     .eq("id", id);
   revalidateAll();
@@ -96,7 +96,7 @@ export async function rescheduleTodo(id: string, dueDate: string) {
 export async function parkTodo(id: string, wakeAtISO: string, waitingOn: string | null) {
   const { supabase } = await requireUser();
   await supabase
-    .from("todos")
+    .from("haru_todos")
     .update({ status: "waiting", wake_at: wakeAtISO, waiting_on: waitingOn })
     .eq("id", id);
   revalidateAll();
@@ -105,7 +105,7 @@ export async function parkTodo(id: string, wakeAtISO: string, waitingOn: string 
 export async function unparkTodo(id: string) {
   const { supabase } = await requireUser();
   await supabase
-    .from("todos")
+    .from("haru_todos")
     .update({ status: "open", wake_at: null })
     .eq("id", id);
   revalidateAll();
@@ -113,7 +113,7 @@ export async function unparkTodo(id: string) {
 
 export async function toggleFlag(id: string, flagged: boolean) {
   const { supabase } = await requireUser();
-  await supabase.from("todos").update({ flagged }).eq("id", id);
+  await supabase.from("haru_todos").update({ flagged }).eq("id", id);
   revalidateAll();
 }
 
@@ -121,31 +121,31 @@ export async function addIdea(formData: FormData) {
   const { user, supabase } = await requireUser();
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return;
-  await supabase.from("ideas").insert({ user_id: user.id, body });
+  await supabase.from("haru_ideas").insert({ user_id: user.id, body });
   revalidateAll();
 }
 
 export async function promoteIdea(id: string) {
   const { user, supabase } = await requireUser();
   const { data: idea } = await supabase
-    .from("ideas")
+    .from("haru_ideas")
     .select("*")
     .eq("id", id)
     .single();
   if (!idea) return;
-  await supabase.from("todos").insert({
+  await supabase.from("haru_todos").insert({
     user_id: user.id,
     title: idea.body,
     project_id: idea.project_id,
     source: "capture",
   });
-  await supabase.from("ideas").delete().eq("id", id);
+  await supabase.from("haru_ideas").delete().eq("id", id);
   revalidateAll();
 }
 
 export async function deleteIdea(id: string) {
   const { supabase } = await requireUser();
-  await supabase.from("ideas").delete().eq("id", id);
+  await supabase.from("haru_ideas").delete().eq("id", id);
   revalidateAll();
 }
 
@@ -154,7 +154,7 @@ export async function addProject(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return;
   const color = String(formData.get("color") ?? "#2E6E8E");
-  await supabase.from("projects").insert({ user_id: user.id, name, color });
+  await supabase.from("haru_projects").insert({ user_id: user.id, name, color });
   revalidatePath("/settings");
   revalidateAll();
 }
