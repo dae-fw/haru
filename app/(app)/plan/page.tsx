@@ -1,4 +1,5 @@
 import { requireUser } from "@/lib/auth";
+import Gear from "@/components/Gear";
 
 export default async function PlanPage() {
   await requireUser();
@@ -8,9 +9,7 @@ export default async function PlanPage() {
         <div className="eyebrow">Plan · Haiku 4.5</div>
         <h1>Plan the day together</h1>
         <div className="sub">Coming in build step 3</div>
-        <a className="gear" href="/settings" aria-label="Settings">
-          ⚙
-        </a>
+        <Gear />
       </header>
       <div className="body">
         <div className="seg">

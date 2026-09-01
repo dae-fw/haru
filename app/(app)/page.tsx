@@ -10,6 +10,7 @@ import { todayISO } from "@/lib/recurrence";
 import { unparkTodo } from "@/app/(app)/actions";
 import TodoRow from "@/components/TodoRow";
 import PlanLink from "@/components/PlanLink";
+import Gear from "@/components/Gear";
 import type { Project, Todo } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,11 @@ function greeting() {
   if (h < 12) return "Good morning";
   if (h < 18) return "Good afternoon";
   return "Good evening";
+}
+
+function displayName(meta?: string, email?: string | null): string {
+  const raw = meta?.split(" ")[0] ?? email?.split("@")[0] ?? "there";
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
 function rank(t: Todo, today: string): number {
@@ -48,14 +54,18 @@ export default async function TodayPage() {
   const overdue = todayList.filter((t) => rank(t, today) === 0);
   const rest = todayList.filter((t) => rank(t, today) !== 0);
 
-  const name = (user.user_metadata?.name as string | undefined)?.split(" ")[0] ?? "there";
+  const name = displayName(
+    user.user_metadata?.name as string | undefined,
+    user.email,
+  );
   const doneCount = doneToday.length;
   const totalToday = todayList.length + doneCount;
+  const trulyEmpty =
+    todayList.length === 0 && waitingList.length === 0 && doneCount === 0;
 
-  const summary =
-    todayList.length === 0
-      ? "Nothing due today. Enjoy the room to breathe."
-      : `${overdue.length ? `${overdue.length} overdue, then ` : ""}${rest.length} due today.`;
+  const summary = todayList.length
+    ? `${overdue.length ? `${overdue.length} overdue, then ` : ""}${rest.length} due today.`
+    : "A clear list today — nice.";
 
   return (
     <>
@@ -73,20 +83,20 @@ export default async function TodayPage() {
         <div className="sub">
           {open.length} open · {waitingList.length} waiting · {doneCount} done
         </div>
-        <a className="gear" href="/settings" aria-label="Settings">
-          ⚙
-        </a>
+        <Gear />
       </header>
 
       <div className="body">
-        <div className="summary">
-          {summary}{" "}
-          {totalToday > 0 && (
-            <span className="prog">
-              {doneCount} of {totalToday} done
-            </span>
-          )}
-        </div>
+        {!trulyEmpty && (
+          <div className="summary">
+            {summary}{" "}
+            {totalToday > 0 && (
+              <span className="prog">
+                {doneCount} of {totalToday} done
+              </span>
+            )}
+          </div>
+        )}
 
         {todayList.length > 0 && (
           <ul className="list">
@@ -161,11 +171,22 @@ export default async function TodayPage() {
           </div>
         )}
 
-        {todayList.length === 0 && waitingList.length === 0 && (
+        {trulyEmpty && (
           <div className="empty">
-            <div className="big">☀</div>
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--ink-soft)"
+              strokeWidth={1.6}
+              strokeLinecap="round"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+            </svg>
             <div className="t">Nothing due today</div>
-            <div>Add something from the Capture or All tab.</div>
+            <div>Add a todo in All, or jot something in Capture.</div>
           </div>
         )}
 

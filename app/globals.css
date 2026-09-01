@@ -193,15 +193,18 @@ select {
   position: absolute;
   top: 20px;
   right: 18px;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   border: 1px solid var(--hair);
   background: var(--surface);
   color: var(--ink-soft);
-  font-size: 0.9rem;
+}
+.gear svg {
+  width: 16px;
+  height: 16px;
 }
 .back {
   display: inline-flex;
@@ -819,13 +822,23 @@ select {
 .tabbar a {
   position: relative;
   flex: 1;
-  padding: 10px 4px 14px;
-  text-align: center;
+  padding: 9px 4px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
   color: var(--ink-soft);
-  font-size: 0.68rem;
+  font-size: 0.64rem;
 }
 .tabbar a.active {
   color: var(--accent);
+}
+.tabicon {
+  width: 21px;
+  height: 21px;
+}
+.tabbar {
+  padding-bottom: env(safe-area-inset-bottom);
 }
 .tabbar .tbadge {
   position: absolute;
@@ -841,6 +854,19 @@ select {
   display: grid;
   place-items: center;
   padding: 0 3px;
+}
+
+@media (min-width: 540px) {
+  body {
+    padding: 24px 0;
+  }
+  .shell {
+    min-height: calc(100dvh - 48px);
+    border: 1px solid var(--hair);
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

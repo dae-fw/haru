@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { getIdeas } from "@/lib/data";
 import { deleteIdea, promoteIdea } from "@/app/(app)/actions";
 import AddIdea from "@/components/AddIdea";
+import Gear from "@/components/Gear";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export default async function CapturePage() {
         <div className="eyebrow">Capture</div>
         <h1>Jot it now, sort it later</h1>
         <div className="sub">A quick place for notes and ideas</div>
-        <a className="gear" href="/settings" aria-label="Settings">⚙</a>
+        <Gear />
       </header>
 
       <div className="body">

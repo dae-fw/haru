@@ -1,8 +1,12 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { todayISO } from "@/lib/recurrence";
 import type { Idea, Project, Todo } from "@/lib/types";
 
-export async function getProjects(): Promise<Project[]> {
+// cache() dedupes within a single request — the (app) layout and the page
+// can both call getOpenTodos() and it runs one query.
+
+export const getProjects = cache(async (): Promise<Project[]> => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("haru_projects")
@@ -10,9 +14,9 @@ export async function getProjects(): Promise<Project[]> {
     .order("sort", { ascending: true })
     .order("created_at", { ascending: true });
   return data ?? [];
-}
+});
 
-export async function getOpenTodos(): Promise<Todo[]> {
+export const getOpenTodos = cache(async (): Promise<Todo[]> => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("haru_todos")
@@ -21,9 +25,9 @@ export async function getOpenTodos(): Promise<Todo[]> {
     .order("due_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
   return (data as Todo[]) ?? [];
-}
+});
 
-export async function getDoneToday(): Promise<Todo[]> {
+export const getDoneToday = cache(async (): Promise<Todo[]> => {
   const supabase = await createClient();
   const start = `${todayISO()}T00:00:00`;
   const { data } = await supabase
@@ -33,16 +37,16 @@ export async function getDoneToday(): Promise<Todo[]> {
     .gte("completed_at", start)
     .order("completed_at", { ascending: false });
   return (data as Todo[]) ?? [];
-}
+});
 
-export async function getIdeas(): Promise<Idea[]> {
+export const getIdeas = cache(async (): Promise<Idea[]> => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("haru_ideas")
     .select("*")
     .order("created_at", { ascending: false });
   return (data as Idea[]) ?? [];
-}
+});
 
 /** Todos that belong on the Today screen: overdue, due today, flagged, or a "waiting" item whose wake time has passed. */
 export function isOnToday(t: Todo): boolean {

@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { getDoneToday, getOpenTodos, getProjects, isWaiting } from "@/lib/data";
 import AddTodo from "@/components/AddTodo";
 import TodoRow from "@/components/TodoRow";
+import Gear from "@/components/Gear";
 import type { Project, Todo } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +32,7 @@ export default async function AllPage() {
         <div className="eyebrow">All todos</div>
         <h1>The full list</h1>
         <div className="sub">{active.length} open across {buckets.length} groups</div>
-        <a className="gear" href="/settings" aria-label="Settings">⚙</a>
+        <Gear />
       </header>
 
       <div className="body">

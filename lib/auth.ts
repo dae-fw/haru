@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -5,9 +6,10 @@ const ALLOWED = (process.env.HARU_ALLOWED_EMAIL ?? "").toLowerCase().trim();
 
 /**
  * Use at the top of every protected Server Component / Action.
- * Returns the signed-in, allow-listed user or redirects to /login.
+ * Wrapped in cache() so the layout + page + actions in one request share a
+ * single auth round-trip instead of hitting the Supabase auth server each time.
  */
-export async function requireUser() {
+export const requireUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -17,4 +19,4 @@ export async function requireUser() {
     redirect("/login");
   }
   return { user, supabase };
-}
+});
