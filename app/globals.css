@@ -857,7 +857,7 @@ button.title-edit {
 .sheet-wrap {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 70; /* above .fx (60) — a bottom sheet must never render under the confetti canvas */
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -865,7 +865,7 @@ button.title-edit {
 .sheet-bd {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(10, 12, 11, 0.55);
 }
 .sheet {
   position: relative;
@@ -877,12 +877,11 @@ button.title-edit {
   padding: 16px 18px 22px;
   max-height: 88dvh;
   overflow-y: auto;
-  animation: sheet-up 0.16s ease;
+  animation: sheet-up 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes sheet-up {
   from {
-    transform: translateY(12px);
-    opacity: 0.6;
+    transform: translateY(16px);
   }
 }
 .sheet h3 {
