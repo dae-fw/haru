@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const ALLOWED = (process.env.HARU_ALLOWED_EMAIL ?? "").toLowerCase().trim();
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/signout"];
+const PUBLIC_PATHS = ["/login", "/auth/signout"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

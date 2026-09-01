@@ -1,16 +1,21 @@
 # Haru
 
 Personal productivity dashboard — todos by project, ideas, and (later) a daily planning chat.
-Single user, Google login. Next.js + Supabase, deployed to Vercel at `haru.daelee.com`.
+Single user, email + password login. Next.js + Supabase, deployed to Vercel at `haru.daelee.com`.
 
 This repo is **step 1 of the build brief**: data model, CRUD, the Today / All / Capture screens,
-and Google sign-in. Calendar, the Plan chat, files, and Google Tasks sync come next.
+and sign-in. Calendar, the Plan chat, files, and Google Tasks sync come next.
 
 ## Stack
 
-- **Next.js 15** (App Router, server components + server actions), TypeScript, no CSS framework
-- **Supabase** — Postgres + Auth (Google OAuth). Row Level Security scopes every row to the signed-in user
+- **Next.js 16** (App Router, server components + server actions), TypeScript, no CSS framework
+- **Supabase** — Postgres + Auth (email + password). Row Level Security scopes every row to the signed-in user
 - **Vercel** — hosting + `haru.daelee.com`
+
+> **Login is email + password**, not Google OAuth — so Haru can share an existing Supabase
+> project without touching its Auth → Providers config. Google is only needed later for
+> **Calendar API access** (step 2), which is a separate standalone OAuth token flow and does
+> not affect how you log in.
 
 ## One-time setup
 
@@ -24,25 +29,23 @@ collide with anything already there and there's **no "Exposed schemas" setting t
 2. In **SQL Editor**, run `supabase/schema.sql` (tables + RLS). Optionally run `supabase/seed.sql`.
 3. **Project Settings → API**: copy `Project URL` and `anon` key into `.env.local` (see below).
 
-Auth (`auth.users`), the Google provider, and the redirect-URL allowlist are **project-wide** —
-that's fine here. The `HARU_ALLOWED_EMAIL` gate keeps Haru single-user even if the shared
-project has other users.
+The `haru_` table prefix means this is safe to run in a project that other apps already use.
+Shared `auth.users` is fine — the `HARU_ALLOWED_EMAIL` gate keeps Haru single-user.
 
 > Ran an earlier version that made a `haru` schema? Drop it with
 > `drop schema if exists haru cascade;` before running the current `schema.sql`.
 
-### 2. Google OAuth (via Supabase)
+### 2. Create your login
 
-1. Google Cloud Console → create a project → **APIs & Services → OAuth consent screen**:
-   - User type: **External**, publishing status: **Testing**
-   - Add your Google account as a **Test user** (no verification needed for one user)
-   - Scopes: just `.../auth/userinfo.email`, `.../auth/userinfo.profile` for now
-2. **Credentials → Create OAuth client ID → Web application**:
-   - Authorized redirect URI: `https://YOUR-PROJECT.supabase.co/auth/v1/callback`
-3. In Supabase → **Authentication → Providers → Google**: paste the Client ID + Secret, enable.
-4. Supabase → **Authentication → URL Configuration**:
-   - Site URL: `https://haru.daelee.com` (use `http://localhost:3000` while developing)
-   - Redirect URLs: add `http://localhost:3000/**` and `https://haru.daelee.com/**`
+Email + password auth is on by default in every Supabase project — nothing to configure.
+
+1. Supabase → **Authentication → Users → Add user**:
+   - Email: the same address as `HARU_ALLOWED_EMAIL`
+   - Set a password, and tick **Auto Confirm User**
+2. Supabase → **Authentication → Providers → Email**: make sure "Confirm email" is **off**
+   (or just rely on Auto Confirm above). No SMTP needed.
+
+That's the whole auth setup. No Google Cloud project, no OAuth client, no redirect URLs.
 
 ### 3. Local env
 
@@ -53,8 +56,8 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 → you'll hit `/login` → **Continue with Google**.
-Only `HARU_ALLOWED_EMAIL` can get in; anyone else is signed out immediately.
+Open http://localhost:3000 → `/login` → sign in with the email + password you created.
+Only `HARU_ALLOWED_EMAIL` gets past the gate; any other account is signed out immediately.
 
 ### 4. Deploy to Vercel
 
@@ -63,7 +66,8 @@ Only `HARU_ALLOWED_EMAIL` can get in; anyone else is signed out immediately.
    (set `NEXT_PUBLIC_SITE_URL=https://haru.daelee.com`).
 3. Vercel → **Settings → Domains**: add `haru.daelee.com`, follow the DNS instructions
    (a `CNAME` on `haru` → `cname.vercel-dns.com` at your DNS host for `daelee.com`).
-4. Redeploy. Then update the Supabase **Site URL / Redirect URLs** (step 2.4) to the live domain.
+4. Redeploy. In Supabase → **Authentication → URL Configuration**, set **Site URL** to
+   `https://haru.daelee.com` (used for password-reset links etc.).
 
 ## Data model
 
