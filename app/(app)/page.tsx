@@ -23,6 +23,28 @@ function greeting(h: number) {
   return "Good evening";
 }
 
+const CAT_DAY = [
+  "Give Haru a pat",
+  "Fresh water for Haru",
+  "Play with Haru for five minutes",
+  "Check Haru has food",
+  "Say hi to Haru",
+  "Brush Haru",
+];
+const CAT_NIGHT = [
+  "Give Haru a kiss goodnight",
+  "One more chin scratch for Haru",
+  "Tuck Haru in",
+  "Check Haru's water before bed",
+  "Cuddle Haru",
+];
+function catNudge(h: number, tz: string): string {
+  const list = h < 17 ? CAT_DAY : CAT_NIGHT;
+  const day = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+  const seed = day.split("-").reduce((a, n) => a + Number(n), 0);
+  return list[seed % list.length];
+}
+
 function displayName(meta?: string, email?: string | null): string {
   const trimmed = meta?.trim();
   if (trimmed) return trimmed;
@@ -123,6 +145,9 @@ export default async function TodayPage() {
         <div className="sub">
           {open.length} open · {waitingList.length} waiting · {doneCount} done
         </div>
+        <div className="cat-nudge">
+          <span aria-hidden>🐾</span> {catNudge(hourInTz(tz), tz)}
+        </div>
         <Gear />
       </header>
 
@@ -138,7 +163,7 @@ export default async function TodayPage() {
           </div>
         )}
 
-        <QuickAddTodo />
+        <QuickAddTodo projects={projects} />
 
         {(above > 0 || below > 0) && (
           <ul className="list">
@@ -149,6 +174,7 @@ export default async function TodayPage() {
               <TodoRow
                 key={t.id}
                 todo={t}
+                projects={projects}
                 project={t.project_id ? byId.get(t.project_id) : undefined}
               />
             ))}
@@ -166,6 +192,7 @@ export default async function TodayPage() {
               <TodoRow
                 key={t.id}
                 todo={t}
+                projects={projects}
                 project={t.project_id ? byId.get(t.project_id) : undefined}
               />
             ))}

@@ -6,18 +6,22 @@ import { burstFrom } from "@/lib/confetti";
 import { describeRecurrence, todayISO } from "@/lib/recurrence";
 import type { Project, Todo } from "@/lib/types";
 import RescheduleSheet from "@/components/RescheduleSheet";
+import EditTodoSheet from "@/components/EditTodoSheet";
 
 export default function TodoRow({
   todo,
   project,
+  projects = [],
   showTools = true,
 }: {
   todo: Todo;
   project?: Project;
+  projects?: Project[];
   showTools?: boolean;
 }) {
   const [, start] = useTransition();
   const [sheet, setSheet] = useState(false);
+  const [edit, setEdit] = useState(false);
   const [playing, setPlaying] = useState(false);
   const checkRef = useRef<HTMLButtonElement>(null);
   const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -55,7 +59,13 @@ export default function TodoRow({
         </svg>
       </button>
       <div className="main">
-        <div className="title">{todo.title}</div>
+        {showTools && !done ? (
+          <button className="title title-edit" onClick={() => setEdit(true)}>
+            {todo.title}
+          </button>
+        ) : (
+          <div className="title">{todo.title}</div>
+        )}
         <div className="meta">
           {overdue && <span className="chip overdue">overdue</span>}
           {dueToday && <span className="chip today">due today</span>}
@@ -74,14 +84,26 @@ export default function TodoRow({
             </span>
           )}
           {showTools && !done && (
-            <button className="resched" onClick={() => setSheet(true)}>
-              {todo.recurrence ? "reschedule / repeat" : "reschedule / park"}
-            </button>
+            <>
+              <button className="resched" onClick={() => setEdit(true)}>
+                edit
+              </button>
+              <button className="resched" onClick={() => setSheet(true)}>
+                {todo.recurrence ? "reschedule / repeat" : "reschedule / park"}
+              </button>
+            </>
           )}
         </div>
       </div>
 
       {sheet && <RescheduleSheet todo={todo} onClose={() => setSheet(false)} />}
+      {edit && (
+        <EditTodoSheet
+          todo={todo}
+          projects={projects}
+          onClose={() => setEdit(false)}
+        />
+      )}
     </li>
   );
 }

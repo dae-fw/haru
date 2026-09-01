@@ -45,7 +45,7 @@ export default async function AllPage() {
             </h2>
             <ul className="list">
               {b.items.map((t) => (
-                <TodoRow key={t.id} todo={t} project={t.project_id ? byId.get(t.project_id) : undefined} />
+                <TodoRow key={t.id} todo={t} projects={projects} project={t.project_id ? byId.get(t.project_id) : undefined} />
               ))}
             </ul>
           </div>
@@ -56,7 +56,7 @@ export default async function AllPage() {
             <h2>Done today <span className="count">{doneToday.length}</span></h2>
             <ul className="list">
               {doneToday.map((t) => (
-                <TodoRow key={t.id} todo={t} showTools={false} project={t.project_id ? byId.get(t.project_id) : undefined} />
+                <TodoRow key={t.id} todo={t} projects={projects} showTools={false} project={t.project_id ? byId.get(t.project_id) : undefined} />
               ))}
             </ul>
           </div>

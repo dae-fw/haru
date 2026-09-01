@@ -133,6 +133,31 @@ export async function unparkTodo(id: string) {
   revalidateAll();
 }
 
+export async function updateTodo(
+  id: string,
+  patch: {
+    title?: string;
+    project_id?: string | null;
+    due_date?: string | null;
+    flagged?: boolean;
+    notes?: string | null;
+  },
+) {
+  const { supabase } = await requireUser();
+  const update: Record<string, unknown> = {};
+  if (patch.title !== undefined) {
+    const t = patch.title.trim();
+    if (t) update.title = t;
+  }
+  if (patch.project_id !== undefined) update.project_id = patch.project_id || null;
+  if (patch.due_date !== undefined) update.due_date = patch.due_date || null;
+  if (patch.flagged !== undefined) update.flagged = patch.flagged;
+  if (patch.notes !== undefined) update.notes = patch.notes?.trim() || null;
+  if (Object.keys(update).length === 0) return;
+  await supabase.from("haru_todos").update(update).eq("id", id);
+  revalidateAll();
+}
+
 export async function toggleFlag(id: string, flagged: boolean) {
   const { supabase } = await requireUser();
   await supabase.from("haru_todos").update({ flagged }).eq("id", id);

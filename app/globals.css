@@ -202,6 +202,18 @@ select {
   font-size: 0.82rem;
   margin-top: 3px;
 }
+.cat-nudge {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  padding: 3px 11px 3px 9px;
+}
 .gear {
   position: absolute;
   top: 20px;
@@ -392,6 +404,17 @@ select {
   color: var(--ink-soft);
   background-size: 100% 1.5px;
 }
+button.title-edit {
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: text;
+  display: block;
+  width: 100%;
+}
 
 /* satisfying settle — task completion */
 .row.playing {
@@ -537,6 +560,21 @@ select {
   height: 34px;
   font-size: 1rem;
   cursor: pointer;
+}
+.field button:disabled {
+  opacity: 0.5;
+}
+.nlp-preview {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 8px 4px 0;
+  font-size: 0.8rem;
+}
+.nlp-preview .nlp-title {
+  color: var(--ink);
+  font-weight: 500;
 }
 
 .idea {

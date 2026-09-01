@@ -1,7 +1,9 @@
 "use client";
 
-import { useRef, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { addTodo } from "@/app/(app)/actions";
+import { parseTodoInput } from "@/lib/nlp";
+import type { Project } from "@/lib/types";
 
 function todayLocalISO() {
   const d = new Date();
@@ -11,31 +13,61 @@ function todayLocalISO() {
 }
 
 export default function QuickAddTodo({
-  placeholder = "Add a task for today…",
-  dueToday = true,
+  projects = [],
+  placeholder = "Add a task…  “call dentist friday #Personal !”",
 }: {
+  projects?: Project[];
   placeholder?: string;
-  dueToday?: boolean;
 }) {
-  const formRef = useRef<HTMLFormElement>(null);
+  const [text, setText] = useState("");
   const [pending, start] = useTransition();
+  const parsed = useMemo(() => parseTodoInput(text, projects), [text, projects]);
+  const showPreview = text.trim().length > 0 && parsed.hints.length > 0;
+
+  function submit() {
+    const t = text.trim();
+    if (!t || pending) return;
+    const fd = new FormData();
+    fd.set("title", parsed.title || t);
+    fd.set("project_id", parsed.projectId ?? "");
+    fd.set("due_date", parsed.dueDate ?? todayLocalISO());
+    if (parsed.flagged) fd.set("flagged", "on");
+    start(async () => {
+      await addTodo(fd);
+      setText("");
+    });
+  }
 
   return (
-    <form
-      ref={formRef}
-      className="field"
-      action={(fd) =>
-        start(async () => {
-          if (dueToday && !fd.get("due_date")) fd.set("due_date", todayLocalISO());
-          await addTodo(fd);
-          formRef.current?.reset();
-        })
-      }
-    >
-      <input type="text" name="title" placeholder={placeholder} required autoComplete="off" />
-      <button type="submit" aria-label="Add task" disabled={pending}>
-        +
-      </button>
-    </form>
+    <div>
+      <form
+        className="field"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={placeholder}
+          autoComplete="off"
+        />
+        <button type="submit" aria-label="Add task" disabled={pending || !text.trim()}>
+          +
+        </button>
+      </form>
+      {showPreview && (
+        <div className="nlp-preview">
+          <span className="nlp-title">{parsed.title}</span>
+          {parsed.hints.map((h) => (
+            <span className="chip" key={h}>
+              {h}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
