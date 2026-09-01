@@ -16,9 +16,19 @@ and Google sign-in. Calendar, the Plan chat, files, and Google Tasks sync come n
 
 ### 1. Supabase project
 
-1. Create a project at https://supabase.com (free tier is fine).
-2. In **SQL Editor**, run `supabase/schema.sql`. Optionally run `supabase/seed.sql` for starter projects.
-3. **Project Settings → API**: copy `Project URL` and `anon` key into `.env.local` (see below).
+You can **reuse an existing Supabase project** — Haru keeps all its tables in a dedicated
+`haru` Postgres schema, so it won't collide with anything already in `public`.
+
+1. Create a project at https://supabase.com, or pick an existing one (free tier includes 2 projects).
+2. In **SQL Editor**, run `supabase/schema.sql` (creates the `haru` schema + tables + RLS).
+   Optionally run `supabase/seed.sql` for starter projects.
+3. **Project Settings → API → Exposed schemas**: add `haru` alongside `public`, and Save.
+   (Without this the API returns "schema must be one of the following" errors.)
+4. **Project Settings → API**: copy `Project URL` and `anon` key into `.env.local` (see below).
+
+Auth (`auth.users`), the Google provider, and the redirect-URL allowlist are **project-wide**,
+not per-schema — that's fine here. The `HARU_ALLOWED_EMAIL` gate keeps Haru single-user even
+if the shared project has other users.
 
 ### 2. Google OAuth (via Supabase)
 
@@ -55,6 +65,10 @@ Only `HARU_ALLOWED_EMAIL` can get in; anyone else is signed out immediately.
 4. Redeploy. Then update the Supabase **Site URL / Redirect URLs** (step 2.4) to the live domain.
 
 ## Data model
+
+All tables live in the **`haru`** schema (`haru.projects`, `haru.todos`, `haru.ideas`). The
+Supabase client is configured with `db: { schema: "haru" }`, so `.from("todos")` in the code
+resolves there automatically.
 
 - **projects** — `name`, `color`, `sort`
 - **todos** — `title`, `project_id`, `notes`, `due_date`, `status` (`open` / `done` / `waiting`),
