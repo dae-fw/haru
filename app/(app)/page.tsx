@@ -7,7 +7,7 @@ import {
   isWaiting,
 } from "@/lib/data";
 import { getTodayEvents, type CalEvent } from "@/lib/google";
-import { todayISO } from "@/lib/recurrence";
+import { getTimeZone, hourInTz, timeInTz, todayInTz } from "@/lib/tz";
 import { unparkTodo } from "@/app/(app)/actions";
 import TodoRow from "@/components/TodoRow";
 import PlanLink from "@/components/PlanLink";
@@ -16,8 +16,7 @@ import type { Project, Todo } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-function greeting() {
-  const h = new Date().getHours();
+function greeting(h: number) {
   if (h < 12) return "Good morning";
   if (h < 18) return "Good afternoon";
   return "Good evening";
@@ -36,13 +35,8 @@ function rank(t: Todo, today: string): number {
   return 2;
 }
 
-function EventRow({ e, past }: { e: CalEvent; past?: boolean }) {
-  const when = e.allDay
-    ? "all day"
-    : new Date(e.start).toLocaleTimeString(undefined, {
-        hour: "numeric",
-        minute: "2-digit",
-      });
+function EventRow({ e, past, tz }: { e: CalEvent; past?: boolean; tz: string }) {
+  const when = e.allDay ? "all day" : timeInTz(e.start, tz);
   return (
     <li className={`row event${past ? " past" : ""}`}>
       <span className="when">{when}</span>
@@ -58,18 +52,19 @@ function EventRow({ e, past }: { e: CalEvent; past?: boolean }) {
 
 export default async function TodayPage() {
   const { user } = await requireUser();
+  const tz = await getTimeZone();
   const [projects, open, doneToday, events] = await Promise.all([
     getProjects(),
     getOpenTodos(),
     getDoneToday(),
-    getTodayEvents(),
+    getTodayEvents(tz),
   ]);
   const byId = new Map<string, Project>(projects.map((p) => [p.id, p]));
-  const today = todayISO();
+  const today = todayInTz(tz);
   const now = Date.now();
 
   const todayList = open
-    .filter(isOnToday)
+    .filter((t) => isOnToday(t, today))
     .sort(
       (a, b) =>
         rank(a, today) - rank(b, today) ||
@@ -114,14 +109,15 @@ export default async function TodayPage() {
     <>
       <header className="screen-head">
         <div className="eyebrow">
-          {new Date().toLocaleDateString(undefined, {
+          {new Date().toLocaleDateString("en-US", {
+            timeZone: tz,
             weekday: "long",
             month: "long",
             day: "numeric",
           })}
         </div>
         <h1>
-          {greeting()}, {name}
+          {greeting(hourInTz(tz))}, {name}
         </h1>
         <div className="sub">
           {open.length} open · {waitingList.length} waiting · {doneCount} done
@@ -144,7 +140,7 @@ export default async function TodayPage() {
         {(above > 0 || below > 0) && (
           <ul className="list">
             {pastEvents.map((e) => (
-              <EventRow key={e.id} e={e} past />
+              <EventRow key={e.id} e={e} past tz={tz} />
             ))}
             {overdue.map((t) => (
               <TodoRow
@@ -161,7 +157,7 @@ export default async function TodayPage() {
               </div>
             )}
             {upcomingEvents.map((e) => (
-              <EventRow key={e.id} e={e} />
+              <EventRow key={e.id} e={e} tz={tz} />
             ))}
             {rest.map((t) => (
               <TodoRow

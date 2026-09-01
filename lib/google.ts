@@ -95,13 +95,31 @@ function normalize(e: {
   };
 }
 
-export const getTodayEvents = cache(async (): Promise<CalEvent[]> => {
+function tzOffset(tz: string, at: Date): string {
+  try {
+    const name = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      timeZoneName: "longOffset",
+    })
+      .formatToParts(at)
+      .find((p) => p.type === "timeZoneName")?.value;
+    const m = name?.match(/GMT([+-]\d{2}):?(\d{2})?/);
+    if (m) return `${m[1]}:${m[2] ?? "00"}`;
+  } catch {
+    /* fall through */
+  }
+  return "+00:00";
+}
+
+export const getTodayEvents = cache(async (tz: string = "UTC"): Promise<CalEvent[]> => {
   if (!CONFIGURED) return [];
   const token = await accessToken();
   if (!token) return [];
   const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+  const date = now.toLocaleDateString("en-CA", { timeZone: tz }); // yyyy-mm-dd in tz
+  const off = tzOffset(tz, now);
+  const start = `${date}T00:00:00${off}`;
+  const end = `${date}T23:59:59${off}`;
   const url = `${CAL_BASE}/events?timeMin=${encodeURIComponent(start)}&timeMax=${encodeURIComponent(
     end,
   )}&singleEvents=true&orderBy=startTime&maxResults=50`;

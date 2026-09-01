@@ -49,9 +49,8 @@ export const getIdeas = cache(async (): Promise<Idea[]> => {
 });
 
 /** Todos that belong on the Today screen: overdue, due today, flagged, or a "waiting" item whose wake time has passed. */
-export function isOnToday(t: Todo): boolean {
+export function isOnToday(t: Todo, today: string = todayISO()): boolean {
   const now = new Date().toISOString();
-  const today = todayISO();
   if (t.status === "waiting") {
     return !!t.wake_at && t.wake_at <= now;
   }

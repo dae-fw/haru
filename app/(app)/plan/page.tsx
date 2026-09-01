@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { getOpenTodos, getProjects } from "@/lib/data";
 import { getTodayEvents, isGoogleConnected } from "@/lib/google";
+import { getTimeZone } from "@/lib/tz";
 import { openingMessage, type PlanContext } from "@/lib/plan";
 import PlanChat from "@/components/PlanChat";
 import Gear from "@/components/Gear";
@@ -9,13 +10,14 @@ export const dynamic = "force-dynamic";
 
 export default async function PlanPage() {
   await requireUser();
+  const tz = await getTimeZone();
   const [projects, todos, connected] = await Promise.all([
     getProjects(),
     getOpenTodos(),
     isGoogleConnected(),
   ]);
-  const events = connected ? await getTodayEvents() : [];
-  const ctx: PlanContext = { todos, projects, events, googleConnected: connected };
+  const events = connected ? await getTodayEvents(tz) : [];
+  const ctx: PlanContext = { todos, projects, events, googleConnected: connected, tz };
 
   return (
     <>

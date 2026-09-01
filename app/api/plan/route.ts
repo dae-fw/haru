@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { getOpenTodos, getProjects } from "@/lib/data";
 import { getTodayEvents, isGoogleConnected, createCalendarEvent, moveCalendarEvent } from "@/lib/google";
+import { getTimeZone } from "@/lib/tz";
 import { buildSystemPrompt, PLAN_MODEL, type PlanContext } from "@/lib/plan";
 import {
   completeTodo,
@@ -33,13 +34,14 @@ export async function POST(req: Request) {
     return Response.json({ reply: "", actions: [] }, { status: 400 });
   }
 
+  const tz = await getTimeZone();
   const [projects, todos, connected] = await Promise.all([
     getProjects(),
     getOpenTodos(),
     isGoogleConnected(),
   ]);
-  const events = connected ? await getTodayEvents() : [];
-  const ctx: PlanContext = { todos, projects, events, googleConnected: connected };
+  const events = connected ? await getTodayEvents(tz) : [];
+  const ctx: PlanContext = { todos, projects, events, googleConnected: connected, tz };
 
   const tools: Anthropic.Tool[] = [
     {
