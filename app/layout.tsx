@@ -25,12 +25,20 @@ const serif = Fraunces({
 export const metadata: Metadata = {
   title: "Haru",
   description: "A calm plan for the day.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Haru",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
   themeColor: "#2e6e8e",
 };
 

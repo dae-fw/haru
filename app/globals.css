@@ -123,6 +123,9 @@
 
 html,
 body {
+  height: 100%;
+  overflow: hidden; /* the .body element is the only scroll container */
+  overscroll-behavior: none;
   background: var(--ground);
   color: var(--ink);
   font-family: var(--font-sans);
@@ -148,13 +151,20 @@ select {
 .shell {
   max-width: 480px;
   margin: 0 auto;
-  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   background: var(--surface);
   border-left: 1px solid var(--hair);
   border-right: 1px solid var(--hair);
   position: relative;
+}
+.screen-head {
+  flex: none;
+}
+.tabbar {
+  flex: none;
 }
 
 .fx {
@@ -165,7 +175,7 @@ select {
 }
 
 .screen-head {
-  padding: 24px 20px 14px;
+  padding: max(24px, env(safe-area-inset-top)) 20px 14px;
   border-bottom: 1px solid var(--hair);
   position: relative;
 }
@@ -218,7 +228,10 @@ select {
 
 .body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: 16px 18px 32px;
   display: flex;
   flex-direction: column;
@@ -816,8 +829,6 @@ select {
   display: flex;
   border-top: 1px solid var(--hair);
   background: var(--surface);
-  position: sticky;
-  bottom: 0;
 }
 .tabbar a {
   position: relative;
@@ -861,10 +872,9 @@ select {
     padding: 24px 0;
   }
   .shell {
-    min-height: calc(100dvh - 48px);
+    height: calc(100dvh - 48px);
     border: 1px solid var(--hair);
     border-radius: 22px;
-    overflow: hidden;
     box-shadow: var(--shadow);
   }
 }

@@ -171,6 +171,14 @@ export async function deleteIdea(id: string) {
   revalidateAll();
 }
 
+export async function setNickname(formData: FormData) {
+  const { supabase } = await requireUser();
+  const nickname = String(formData.get("nickname") ?? "").trim().slice(0, 40);
+  await supabase.auth.updateUser({ data: { nickname: nickname || null } });
+  revalidatePath("/");
+  revalidatePath("/settings");
+}
+
 export async function addProject(formData: FormData) {
   const { user, supabase } = await requireUser();
   const name = String(formData.get("name") ?? "").trim();

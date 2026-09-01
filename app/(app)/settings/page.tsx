@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { getProjects } from "@/lib/data";
-import { addProject } from "@/app/(app)/actions";
+import { addProject, setNickname } from "@/app/(app)/actions";
 import ThemeControls from "@/components/ThemeControls";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +21,27 @@ export default async function SettingsPage() {
       </header>
 
       <div className="body">
+        <div className="settings-block">
+          <div className="label">What Haru calls you</div>
+          <form action={setNickname}>
+            <input
+              type="text"
+              name="nickname"
+              placeholder="Nickname"
+              maxLength={40}
+              defaultValue={
+                (user.user_metadata?.nickname as string | undefined) ?? ""
+              }
+            />
+            <button className="btn" type="submit">
+              Save
+            </button>
+          </form>
+          <p style={{ marginTop: 8 }}>
+            Used in the greeting on Today. Blank falls back to your username.
+          </p>
+        </div>
+
         <ThemeControls />
 
         <div className="settings-block">

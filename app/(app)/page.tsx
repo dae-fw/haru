@@ -23,8 +23,10 @@ function greeting() {
 }
 
 function displayName(meta?: string, email?: string | null): string {
-  const raw = meta?.split(" ")[0] ?? email?.split("@")[0] ?? "there";
-  return raw.charAt(0).toUpperCase() + raw.slice(1);
+  const trimmed = meta?.trim();
+  if (trimmed) return trimmed; // explicit nickname — respect their casing
+  const local = email?.split("@")[0] ?? "there";
+  return local.charAt(0).toUpperCase() + local.slice(1);
 }
 
 function rank(t: Todo, today: string): number {
@@ -55,7 +57,8 @@ export default async function TodayPage() {
   const rest = todayList.filter((t) => rank(t, today) !== 0);
 
   const name = displayName(
-    user.user_metadata?.name as string | undefined,
+    (user.user_metadata?.nickname as string | undefined) ??
+      (user.user_metadata?.name as string | undefined),
     user.email,
   );
   const doneCount = doneToday.length;
