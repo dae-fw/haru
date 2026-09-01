@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { getIdeas } from "@/lib/data";
 import { deleteIdea, promoteIdea } from "@/app/(app)/actions";
 import AddIdea from "@/components/AddIdea";
+import ConfirmButton from "@/components/ConfirmButton";
 import Gear from "@/components/Gear";
 
 export const dynamic = "force-dynamic";
@@ -38,9 +39,11 @@ export default async function CapturePage() {
                   <form action={promoteIdea.bind(null, idea.id)}>
                     <button type="submit">make it a todo</button>
                   </form>
-                  <form action={deleteIdea.bind(null, idea.id)}>
-                    <button type="submit">delete</button>
-                  </form>
+                  <ConfirmButton
+                    action={deleteIdea.bind(null, idea.id)}
+                    label="delete"
+                    confirmLabel="Delete this idea?"
+                  />
                 </div>
               </div>
             ))}

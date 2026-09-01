@@ -3,6 +3,7 @@ import { getProjects } from "@/lib/data";
 import { isGoogleConnected } from "@/lib/google";
 import { addProject, disconnectGoogle, setNickname } from "@/app/(app)/actions";
 import ThemeControls from "@/components/ThemeControls";
+import ConfirmButton from "@/components/ConfirmButton";
 import { VERSION_LABEL } from "@/lib/version";
 
 export const dynamic = "force-dynamic";
@@ -61,11 +62,12 @@ export default async function SettingsPage({
               <p style={{ marginBottom: 8 }}>
                 Connected. Today&apos;s events show on the Today screen.
               </p>
-              <form action={disconnectGoogle}>
-                <button className="btn" type="submit">
-                  Disconnect
-                </button>
-              </form>
+              <ConfirmButton
+                action={disconnectGoogle}
+                label="Disconnect"
+                confirmLabel="Disconnect Calendar?"
+                className="btn"
+              />
             </>
           ) : (
             <>
