@@ -518,31 +518,6 @@ select {
   font: inherit;
 }
 
-.skel {
-  border-radius: var(--radius);
-  background: linear-gradient(
-    90deg,
-    var(--surface-2) 0%,
-    var(--hair) 50%,
-    var(--surface-2) 100%
-  );
-  background-size: 200% 100%;
-  animation: skel 1.2s ease-in-out infinite;
-}
-@keyframes skel {
-  from {
-    background-position: 200% 0;
-  }
-  to {
-    background-position: -200% 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .skel {
-    animation: none;
-  }
-}
-
 .appfoot {
   margin-top: 4px;
   text-align: center;
