@@ -171,6 +171,13 @@ export async function deleteIdea(id: string) {
   revalidateAll();
 }
 
+export async function disconnectGoogle() {
+  const { supabase } = await requireUser();
+  await supabase.from("haru_google_tokens").delete().not("user_id", "is", null);
+  revalidatePath("/");
+  revalidatePath("/settings");
+}
+
 export async function setNickname(formData: FormData) {
   const { supabase } = await requireUser();
   const nickname = String(formData.get("nickname") ?? "").trim().slice(0, 40);

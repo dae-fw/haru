@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useOptimistic, useRef, useState, useTransition } from "react";
 import { completeTodo, reopenTodo } from "@/app/(app)/actions";
 import { burstFrom } from "@/lib/confetti";
 import { describeRecurrence, todayISO } from "@/lib/recurrence";
@@ -16,25 +16,28 @@ export default function TodoRow({
   project?: Project;
   showTools?: boolean;
 }) {
-  const [pending, start] = useTransition();
+  const [, start] = useTransition();
   const [sheet, setSheet] = useState(false);
   const checkRef = useRef<HTMLButtonElement>(null);
-  const done = todo.status === "done";
+
+  // optimistic: flip the row's done-ness immediately, reconcile on revalidate
+  const [optDone, setOptDone] = useOptimistic(todo.status === "done");
+  const done = optDone;
+
   const today = todayISO();
   const overdue = !done && todo.due_date != null && todo.due_date < today;
   const dueToday = !done && todo.due_date === today;
 
   function toggle() {
-    if (done) {
-      start(() => reopenTodo(todo.id));
-      return;
-    }
-    if (checkRef.current) burstFrom(checkRef.current, 24);
-    start(() => completeTodo(todo.id));
+    if (!done && checkRef.current) burstFrom(checkRef.current, 24);
+    start(async () => {
+      setOptDone(!done);
+      await (done ? reopenTodo(todo.id) : completeTodo(todo.id));
+    });
   }
 
   return (
-    <li className={`row${done ? " done" : ""}`} aria-busy={pending}>
+    <li className={`row${done ? " done" : ""}`}>
       <button
         ref={checkRef}
         className="check"

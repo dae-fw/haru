@@ -62,6 +62,17 @@ create table if not exists public.haru_ideas (
   created_at  timestamptz not null default now()
 );
 
+-- ---------- google calendar token (separate from login) ----------
+create table if not exists public.haru_google_tokens (
+  user_id       uuid primary key default auth.uid() references auth.users (id) on delete cascade,
+  access_token  text,
+  refresh_token text not null,
+  scope         text,
+  expires_at    timestamptz,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
 -- ---------- updated_at triggers ----------
 drop trigger if exists haru_projects_updated_at on public.haru_projects;
 create trigger haru_projects_updated_at before update on public.haru_projects
@@ -71,15 +82,20 @@ drop trigger if exists haru_todos_updated_at on public.haru_todos;
 create trigger haru_todos_updated_at before update on public.haru_todos
   for each row execute function public.haru_set_updated_at();
 
+drop trigger if exists haru_google_tokens_updated_at on public.haru_google_tokens;
+create trigger haru_google_tokens_updated_at before update on public.haru_google_tokens
+  for each row execute function public.haru_set_updated_at();
+
 -- ---------- Row Level Security ----------
-alter table public.haru_projects enable row level security;
-alter table public.haru_todos    enable row level security;
-alter table public.haru_ideas    enable row level security;
+alter table public.haru_projects       enable row level security;
+alter table public.haru_todos          enable row level security;
+alter table public.haru_ideas          enable row level security;
+alter table public.haru_google_tokens  enable row level security;
 
 do $$
 declare t text;
 begin
-  foreach t in array array['haru_projects', 'haru_todos', 'haru_ideas'] loop
+  foreach t in array array['haru_projects', 'haru_todos', 'haru_ideas', 'haru_google_tokens'] loop
     execute format('drop policy if exists %I_owner on public.%I', t, t);
     execute format(
       'create policy %I_owner on public.%I

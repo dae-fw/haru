@@ -51,6 +51,23 @@ That's the whole auth setup. No Google Cloud project, no OAuth client, no redire
 (Prefer a real email? Use it for both the Supabase user and `HARU_ALLOWED_EMAIL`, and just
 type the full address on the login screen.)
 
+### 2b. Google Calendar (build step 2 — optional to start)
+
+Calendar is a **separate** Google OAuth from login (login is email/password). This flow
+stores a refresh token in `haru_google_tokens` and uses it for API calls only.
+
+1. Run `supabase/003_google_tokens.sql` in the SQL Editor.
+2. Google Cloud Console → new project → **Enable APIs** → enable **Google Calendar API**.
+3. **OAuth consent screen**: External. Publish it (scopes below are "sensitive" — you'll get a
+   one-time "unverified app" screen you can click through; for one user that's fine, and it
+   avoids the 7-day refresh-token expiry that Testing mode imposes).
+   Scopes: `.../auth/calendar.events`, `.../auth/calendar.readonly`.
+4. **Credentials → Create OAuth client ID → Web application**:
+   - Authorized redirect URIs: `http://localhost:3000/connect/google/callback`
+     and `https://haru.daelee.com/connect/google/callback`
+5. Put the client ID/secret in `.env.local` (and Vercel) as `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
+6. In the app: **Settings → Google Calendar → Connect**. Today's events then show on the Today screen.
+
 ### 3. Local env
 
 ```bash

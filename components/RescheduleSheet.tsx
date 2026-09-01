@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import {
   parkTodo,
   rescheduleTodo,
@@ -48,7 +48,8 @@ export default function RescheduleSheet({
   todo: Todo;
   onClose: () => void;
 }) {
-  const [pending, start] = useTransition();
+  const firedRef = useRef(false);
+  const pending = false;
   const rec = todo.recurrence;
   const [rtype, setRtype] = useState<RecurrenceType>(rec?.type ?? "weekly");
   const [weekdays, setWeekdays] = useState<number[]>(rec?.weekdays ?? [1]);
@@ -56,11 +57,13 @@ export default function RescheduleSheet({
   const [everyN, setEveryN] = useState<number>(rec?.n ?? 3);
   const [who, setWho] = useState("");
 
-  const run = (fn: () => Promise<void>) =>
-    start(async () => {
-      await fn();
-      onClose();
-    });
+  // Close the sheet immediately; let the server action + revalidate land behind it.
+  const run = (fn: () => Promise<void>) => {
+    if (firedRef.current) return;
+    firedRef.current = true;
+    void fn();
+    onClose();
+  };
 
   const saveRepeat = () => {
     let r: Recurrence;

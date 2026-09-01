@@ -6,6 +6,7 @@ import {
   isOnToday,
   isWaiting,
 } from "@/lib/data";
+import { getTodayEvents, type CalEvent } from "@/lib/google";
 import { todayISO } from "@/lib/recurrence";
 import { unparkTodo } from "@/app/(app)/actions";
 import TodoRow from "@/components/TodoRow";
@@ -24,26 +25,48 @@ function greeting() {
 
 function displayName(meta?: string, email?: string | null): string {
   const trimmed = meta?.trim();
-  if (trimmed) return trimmed; // explicit nickname — respect their casing
+  if (trimmed) return trimmed;
   const local = email?.split("@")[0] ?? "there";
   return local.charAt(0).toUpperCase() + local.slice(1);
 }
 
 function rank(t: Todo, today: string): number {
-  if (t.due_date && t.due_date < today) return 0; // overdue
-  if (t.due_date === today) return 1; // due today
-  return 2; // flagged, no date
+  if (t.due_date && t.due_date < today) return 0;
+  if (t.due_date === today) return 1;
+  return 2;
+}
+
+function EventRow({ e, past }: { e: CalEvent; past?: boolean }) {
+  const when = e.allDay
+    ? "all day"
+    : new Date(e.start).toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+  return (
+    <li className={`row event${past ? " past" : ""}`}>
+      <span className="when">{when}</span>
+      <div className="main">
+        <div className="title">{e.title}</div>
+        <div className="meta">
+          <span className="chip">calendar</span>
+        </div>
+      </div>
+    </li>
+  );
 }
 
 export default async function TodayPage() {
   const { user } = await requireUser();
-  const [projects, open, doneToday] = await Promise.all([
+  const [projects, open, doneToday, events] = await Promise.all([
     getProjects(),
     getOpenTodos(),
     getDoneToday(),
+    getTodayEvents(),
   ]);
   const byId = new Map<string, Project>(projects.map((p) => [p.id, p]));
   const today = todayISO();
+  const now = Date.now();
 
   const todayList = open
     .filter(isOnToday)
@@ -56,6 +79,16 @@ export default async function TodayPage() {
   const overdue = todayList.filter((t) => rank(t, today) === 0);
   const rest = todayList.filter((t) => rank(t, today) !== 0);
 
+  const pastEvents = events
+    .filter((e) => !e.allDay && new Date(e.end).getTime() < now)
+    .sort((a, b) => a.start.localeCompare(b.start));
+  const upcomingEvents = events
+    .filter((e) => e.allDay || new Date(e.end).getTime() >= now)
+    .sort((a, b) => (a.allDay ? -1 : 0) - (b.allDay ? -1 : 0) || a.start.localeCompare(b.start));
+
+  const above = pastEvents.length + overdue.length;
+  const below = upcomingEvents.length + rest.length;
+
   const name = displayName(
     (user.user_metadata?.nickname as string | undefined) ??
       (user.user_metadata?.name as string | undefined),
@@ -64,11 +97,18 @@ export default async function TodayPage() {
   const doneCount = doneToday.length;
   const totalToday = todayList.length + doneCount;
   const trulyEmpty =
-    todayList.length === 0 && waitingList.length === 0 && doneCount === 0;
+    todayList.length === 0 &&
+    waitingList.length === 0 &&
+    doneCount === 0 &&
+    events.length === 0;
 
   const summary = todayList.length
-    ? `${overdue.length ? `${overdue.length} overdue, then ` : ""}${rest.length} due today.`
-    : "A clear list today — nice.";
+    ? `${overdue.length ? `${overdue.length} overdue, then ` : ""}${rest.length} due today${
+        upcomingEvents.length ? `, ${upcomingEvents.length} event${upcomingEvents.length > 1 ? "s" : ""} ahead` : ""
+      }.`
+    : events.length
+      ? `No tasks due — ${events.length} event${events.length > 1 ? "s" : ""} on the calendar.`
+      : "A clear list today — nice.";
 
   return (
     <>
@@ -101,8 +141,11 @@ export default async function TodayPage() {
           </div>
         )}
 
-        {todayList.length > 0 && (
+        {(above > 0 || below > 0) && (
           <ul className="list">
+            {pastEvents.map((e) => (
+              <EventRow key={e.id} e={e} past />
+            ))}
             {overdue.map((t) => (
               <TodoRow
                 key={t.id}
@@ -110,13 +153,16 @@ export default async function TodayPage() {
                 project={t.project_id ? byId.get(t.project_id) : undefined}
               />
             ))}
-            {overdue.length > 0 && rest.length > 0 && (
+            {above > 0 && below > 0 && (
               <div className="now-line">
                 <span className="rule" />
                 <span className="lbl">now</span>
                 <span className="rule" />
               </div>
             )}
+            {upcomingEvents.map((e) => (
+              <EventRow key={e.id} e={e} />
+            ))}
             {rest.map((t) => (
               <TodoRow
                 key={t.id}

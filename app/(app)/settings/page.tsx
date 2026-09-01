@@ -1,13 +1,22 @@
 import { requireUser } from "@/lib/auth";
 import { getProjects } from "@/lib/data";
-import { addProject, setNickname } from "@/app/(app)/actions";
+import { isGoogleConnected } from "@/lib/google";
+import { addProject, disconnectGoogle, setNickname } from "@/app/(app)/actions";
 import ThemeControls from "@/components/ThemeControls";
 
 export const dynamic = "force-dynamic";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ gcal?: string }>;
+}) {
   const { user } = await requireUser();
-  const projects = await getProjects();
+  const [projects, gConnected, sp] = await Promise.all([
+    getProjects(),
+    isGoogleConnected(),
+    searchParams,
+  ]);
 
   return (
     <>
@@ -43,6 +52,35 @@ export default async function SettingsPage() {
         </div>
 
         <ThemeControls />
+
+        <div className="settings-block">
+          <div className="label">Google Calendar</div>
+          {gConnected ? (
+            <>
+              <p style={{ marginBottom: 8 }}>
+                Connected. Today&apos;s events show on the Today screen.
+              </p>
+              <form action={disconnectGoogle}>
+                <button className="btn" type="submit">
+                  Disconnect
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <p style={{ marginBottom: 8 }}>
+                {sp.gcal === "error"
+                  ? "Connection failed — try again."
+                  : sp.gcal === "norefresh"
+                    ? "Google didn't return a refresh token. Remove Haru at myaccount.google.com/permissions, then reconnect."
+                    : "Pull your calendar into the day view and let Plan create / move events."}
+              </p>
+              <a className="btn primary" href="/connect/google">
+                Connect Google Calendar
+              </a>
+            </>
+          )}
+        </div>
 
         <div className="settings-block">
           <div className="label">Projects</div>

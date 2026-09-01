@@ -326,6 +326,19 @@ select {
 .row.done {
   opacity: 0.55;
 }
+.row.event {
+  background: var(--surface-2);
+  border-style: dashed;
+}
+.row .when {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+  flex: none;
+  width: 52px;
+  padding-top: 2px;
+  text-align: right;
+}
 .check {
   width: 20px;
   height: 20px;
