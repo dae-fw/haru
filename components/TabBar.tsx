@@ -52,19 +52,21 @@ export default function TabBar({
             onClick={() => setPending(t.href)}
             className={active ? "active" : ""}
           >
-            <svg
-              className="tabicon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.6}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              {ICONS[t.href]}
-            </svg>
-            <span>{t.label}</span>
+            <span className="iconwrap">
+              <svg
+                className="tabicon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={active ? 2 : 1.6}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                {ICONS[t.href]}
+              </svg>
+            </span>
+            <span className="tablabel">{t.label}</span>
             {badge != null && <span className="tbadge">{badge}</span>}
           </Link>
         );

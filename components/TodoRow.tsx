@@ -18,9 +18,10 @@ export default function TodoRow({
 }) {
   const [, start] = useTransition();
   const [sheet, setSheet] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const checkRef = useRef<HTMLButtonElement>(null);
+  const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // optimistic: flip the row's done-ness immediately, reconcile on revalidate
   const [optDone, setOptDone] = useOptimistic(todo.status === "done");
   const done = optDone;
 
@@ -29,7 +30,12 @@ export default function TodoRow({
   const dueToday = !done && todo.due_date === today;
 
   function toggle() {
-    if (!done && checkRef.current) burstFrom(checkRef.current, 24);
+    if (!done) {
+      if (checkRef.current) burstFrom(checkRef.current, 22);
+      setPlaying(true);
+      if (playTimer.current) clearTimeout(playTimer.current);
+      playTimer.current = setTimeout(() => setPlaying(false), 650);
+    }
     start(async () => {
       setOptDone(!done);
       await (done ? reopenTodo(todo.id) : completeTodo(todo.id));
@@ -37,13 +43,17 @@ export default function TodoRow({
   }
 
   return (
-    <li className={`row${done ? " done" : ""}`}>
+    <li className={`row${done ? " done" : ""}${playing ? " playing" : ""}`}>
       <button
         ref={checkRef}
         className="check"
         aria-label={done ? "Reopen task" : "Complete task"}
         onClick={toggle}
-      />
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 12l6 6L20 6" />
+        </svg>
+      </button>
       <div className="main">
         <div className="title">{todo.title}</div>
         <div className="meta">

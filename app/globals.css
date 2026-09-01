@@ -9,6 +9,7 @@
   --accent: #2e6e8e;
   --accent-soft: #deebf1;
   --good: #3e7d63;
+  --good-soft: #e0efe7;
   --warn: #b07a28;
   --crit: #b24a43;
   --radius: 14px;
@@ -55,6 +56,7 @@
     --accent: #5aa6c4;
     --accent-soft: #1e2e36;
     --good: #6fc79b;
+    --good-soft: #1c2b25;
     --warn: #e0a550;
     --crit: #e9756b;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
@@ -90,6 +92,7 @@
   --accent: #5aa6c4;
   --accent-soft: #1e2e36;
   --good: #6fc79b;
+    --good-soft: #1c2b25;
   --warn: #e0a550;
   --crit: #e9756b;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
@@ -340,34 +343,38 @@ select {
   text-align: right;
 }
 .check {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   flex: none;
   margin-top: 1px;
-  border: 1.5px solid var(--ink-soft);
-  border-radius: 6px;
+  border: 1.6px solid var(--ink-soft);
+  border-radius: 7px;
   background: transparent;
   cursor: pointer;
-  position: relative;
+  display: grid;
+  place-items: center;
   transition: transform 0.12s;
 }
 .check:active {
-  transform: scale(0.88);
+  transform: scale(0.9);
+}
+.check svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 22;
+  stroke-dashoffset: 22;
 }
 .row.done .check {
   background: var(--good);
   border-color: var(--good);
 }
-.row.done .check::after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  top: 2px;
-  width: 5px;
-  height: 10px;
-  border: solid var(--surface);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+.row.done .check svg {
+  stroke-dashoffset: 0;
 }
 .row .main {
   flex: 1;
@@ -376,10 +383,49 @@ select {
 .row .title {
   font-size: 0.92rem;
   line-height: 1.35;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 62%;
+  background-size: 0% 1.5px;
 }
 .row.done .title {
-  text-decoration: line-through;
   color: var(--ink-soft);
+  background-size: 100% 1.5px;
+}
+
+/* satisfying settle — task completion */
+.row.playing {
+  animation: row-settle 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.row.playing .check {
+  animation: chk-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.row.playing .check svg {
+  animation: chk-draw 0.28s 0.1s ease forwards;
+}
+.row.playing .title {
+  animation: strike 0.55s 0.14s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes chk-pop {
+  0% { transform: scale(0.82); }
+  50% { transform: scale(1.2); }
+  70% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+@keyframes chk-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes row-settle {
+  0% { transform: translateY(0); box-shadow: 0 0 0 0 rgba(62, 125, 99, 0); }
+  18% {
+    transform: translateY(-3px);
+    background: var(--good-soft);
+    box-shadow: 0 6px 18px -6px rgba(62, 125, 99, 0.5);
+  }
+  100% { transform: translateY(0); box-shadow: 0 0 0 0 rgba(62, 125, 99, 0); }
+}
+@keyframes strike {
+  to { background-size: 100% 1.5px; color: var(--ink-soft); }
 }
 .row .meta {
   margin-top: 5px;
@@ -855,20 +901,40 @@ select {
 .tabbar a {
   position: relative;
   flex: 1;
-  padding: 9px 4px 12px;
+  padding: 8px 4px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
   color: var(--ink-soft);
   font-size: 0.64rem;
+  transition: color 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.tabbar a .iconwrap {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 28px;
+  border-radius: 999px;
+  transition: background 0.18s ease;
 }
 .tabbar a.active {
   color: var(--accent);
 }
+.tabbar a.active .iconwrap {
+  background: var(--accent-soft);
+}
+.tabbar a.active .tablabel {
+  font-weight: 600;
+}
 .tabicon {
   width: 21px;
   height: 21px;
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.tabbar a:active .tabicon {
+  transform: scale(0.8);
 }
 .tabbar {
   padding-bottom: env(safe-area-inset-bottom);
@@ -904,8 +970,13 @@ select {
 @media (prefers-reduced-motion: reduce) {
   .check,
   .check:active,
-  .sheet {
-    transition: none;
-    animation: none;
+  .sheet,
+  .row.playing,
+  .row.playing .check,
+  .row.playing .check svg,
+  .row.playing .title,
+  .tabicon {
+    transition: none !important;
+    animation: none !important;
   }
 }
