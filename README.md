@@ -68,6 +68,18 @@ stores a refresh token in `haru_google_tokens` and uses it for API calls only.
 5. Put the client ID/secret in `.env.local` (and Vercel) as `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
 6. In the app: **Settings → Google Calendar → Connect**. Today's events then show on the Today screen.
 
+### 2c. Plan chat (build step 3)
+
+The Plan tab is a Haiku 4.5 conversation over today's todos + calendar events. It can
+call `complete_todo` / `reschedule_todo` (always) and `create_event` / `move_event` (when
+Calendar is connected). No delete tool, by design.
+
+1. Get an API key from console.anthropic.com.
+2. Add `ANTHROPIC_API_KEY` to `.env.local` and Vercel → redeploy.
+
+Without the key the Plan tab still loads and shows the ranked priority list; sending a
+message just replies that the chat isn't switched on.
+
 ### 3. Local env
 
 ```bash

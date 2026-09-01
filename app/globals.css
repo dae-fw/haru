@@ -623,6 +623,80 @@ select {
   border-radius: 999px;
   padding: 6px 12px;
   font-size: 0.8rem;
+  cursor: pointer;
+  background: transparent;
+}
+.msg.act {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px dashed var(--hair);
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.msg.act::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--good);
+  flex: none;
+}
+
+/* plan chat layout */
+.plan-body {
+  overflow: hidden;
+  gap: 0;
+}
+.chat-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 2px;
+}
+.plan-composer {
+  flex: none;
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  padding: 7px 7px 7px 16px;
+  background: var(--surface);
+}
+.plan-composer input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.9rem;
+}
+.plan-composer button {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.plan-composer button:disabled {
+  opacity: 0.5;
+}
+.typing {
+  align-self: flex-start;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  padding: 4px 6px;
 }
 
 /* segmented control */
