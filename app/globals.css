@@ -936,6 +936,18 @@ select {
 .tabbar a:active .tabicon {
   transform: scale(0.8);
 }
+.tabbar a:active {
+  transform: scaleY(0.9);
+}
+.tabbar a.sel {
+  animation: tab-squish 0.42s cubic-bezier(0.34, 1.7, 0.5, 1);
+}
+@keyframes tab-squish {
+  0% { transform: scaleY(0.9); }
+  40% { transform: scaleY(1.06); }
+  70% { transform: scaleY(0.98); }
+  100% { transform: scaleY(1); }
+}
 .tabbar {
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -975,8 +987,12 @@ select {
   .row.playing .check,
   .row.playing .check svg,
   .row.playing .title,
-  .tabicon {
+  .tabicon,
+  .tabbar a,
+  .tabbar a.sel,
+  .tabbar a:active {
     transition: none !important;
     animation: none !important;
+    transform: none !important;
   }
 }

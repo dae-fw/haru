@@ -29,6 +29,7 @@ export default function TabBar({
 }) {
   const path = usePathname();
   const [pending, setPending] = useState<string | null>(null);
+  const [sel, setSel] = useState<string | null>(null);
 
   // clear the optimistic highlight once the route actually changes
   useEffect(() => setPending(null), [path]);
@@ -49,8 +50,13 @@ export default function TabBar({
             key={t.href}
             href={t.href}
             prefetch
-            onClick={() => setPending(t.href)}
-            className={active ? "active" : ""}
+            onClick={() => {
+              if (isActive) return;
+              setPending(t.href);
+              setSel(t.href);
+              setTimeout(() => setSel((s) => (s === t.href ? null : s)), 450);
+            }}
+            className={`${active ? "active" : ""}${sel === t.href ? " sel" : ""}`}
           >
             <span className="iconwrap">
               <svg
