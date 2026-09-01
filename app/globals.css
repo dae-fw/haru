@@ -881,6 +881,9 @@ button.title-edit {
   inset: 0;
   background: rgba(10, 12, 11, 0.55);
 }
+.sheet-wrap {
+  touch-action: none; /* let only .sheet itself scroll, not the backdrop */
+}
 .sheet {
   position: relative;
   width: 100%;
@@ -889,8 +892,11 @@ button.title-edit {
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
   padding: 16px 18px 22px;
-  max-height: 88dvh;
-  overflow-y: auto;
+  max-height: min(88dvh, 88svh);
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   animation: sheet-up 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes sheet-up {
