@@ -7,15 +7,33 @@ export default async function PlanPage() {
       <header className="screen-head">
         <div className="eyebrow">Plan · Haiku 4.5</div>
         <h1>Plan the day together</h1>
-        <div className="sub">Coming next</div>
-        <a className="gear" href="/settings" aria-label="Settings">⚙</a>
+        <div className="sub">Coming in build step 3</div>
+        <a className="gear" href="/settings" aria-label="Settings">
+          ⚙
+        </a>
       </header>
       <div className="body">
+        <div className="seg">
+          <button className="on">Plan the day</button>
+          <button>Goodnight recap</button>
+        </div>
+
+        <div className="msg ai">
+          Good morning. Once this is wired up I&apos;ll read today&apos;s todos and calendar
+          events, surface what to start with, and be able to complete, reschedule, and
+          move things for you as we talk.
+        </div>
+        <div className="qr">
+          <span>What&apos;s most urgent?</span>
+          <span>Move my overdue items</span>
+          <span>Plan around my 2pm</span>
+        </div>
+
         <div className="summary">
-          The daily planning chat is step 3 of the build. It will read today&apos;s todos and
-          calendar events, then talk through priorities and let Haru call
-          <code> complete_todo</code>, <code>reschedule_todo</code>, <code>create_event</code> and
-          <code> move_event</code>. Calendar integration (step 2) comes first.
+          Needs the Anthropic API (step 3) and Google Calendar (step 2). The tools it will
+          call — <code>complete_todo</code>, <code>reschedule_todo</code>,{" "}
+          <code>create_event</code>, <code>move_event</code> — map to the same actions the
+          app already uses.
         </div>
       </div>
     </>

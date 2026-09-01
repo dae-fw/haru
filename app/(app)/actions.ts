@@ -87,8 +87,30 @@ export async function rescheduleTodo(id: string, dueDate: string) {
   const { supabase } = await requireUser();
   await supabase
     .from("haru_todos")
-    .update({ due_date: dueDate, status: "open", wake_at: null, waiting_on: null })
+    .update({
+      due_date: dueDate,
+      status: "open",
+      wake_at: null,
+      waiting_on: null,
+      snooze_until: null,
+    })
     .eq("id", id);
+  revalidateAll();
+}
+
+/** "Later today" — hide from Today until a timestamp, keep status open. */
+export async function snoozeTodo(id: string, untilISO: string) {
+  const { supabase } = await requireUser();
+  await supabase
+    .from("haru_todos")
+    .update({ snooze_until: untilISO, status: "open" })
+    .eq("id", id);
+  revalidateAll();
+}
+
+export async function setRecurrence(id: string, recurrence: Recurrence | null) {
+  const { supabase } = await requireUser();
+  await supabase.from("haru_todos").update({ recurrence }).eq("id", id);
   revalidateAll();
 }
 

@@ -40,6 +40,8 @@ create table if not exists public.haru_todos (
   -- "waiting on someone" — parked until wake_at, then it comes back at the top
   wake_at         timestamptz,
   waiting_on      text,
+  -- "later today" snooze — hidden from Today until this time, status stays 'open'
+  snooze_until    timestamptz,
   -- provenance
   source          text not null default 'app' check (source in ('app', 'capture', 'google_tasks')),
   google_tasks_id text,

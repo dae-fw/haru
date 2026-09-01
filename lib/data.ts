@@ -46,10 +46,13 @@ export async function getIdeas(): Promise<Idea[]> {
 
 /** Todos that belong on the Today screen: overdue, due today, flagged, or a "waiting" item whose wake time has passed. */
 export function isOnToday(t: Todo): boolean {
+  const now = new Date().toISOString();
   const today = todayISO();
   if (t.status === "waiting") {
-    return !!t.wake_at && t.wake_at <= new Date().toISOString();
+    return !!t.wake_at && t.wake_at <= now;
   }
+  // "later today" snooze hides it until the time passes
+  if (t.snooze_until && t.snooze_until > now) return false;
   if (t.flagged) return true;
   if (t.due_date && t.due_date <= today) return true;
   return false;

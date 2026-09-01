@@ -27,6 +27,7 @@ collide with anything already there and there's **no "Exposed schemas" setting t
 
 1. Create a project at https://supabase.com, or pick an existing one (free tier includes 2 projects).
 2. In **SQL Editor**, run `supabase/schema.sql` (tables + RLS). Optionally run `supabase/seed.sql`.
+   Already ran an older `schema.sql`? Also run `supabase/002_snooze.sql` (adds the "later today" column).
 3. **Project Settings → API**: copy `Project URL` and `anon` key into `.env.local` (see below).
 
 The `haru_` table prefix means this is safe to run in a project that other apps already use.

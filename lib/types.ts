@@ -29,6 +29,7 @@ export interface Todo {
   streak: number;
   wake_at: string | null;
   waiting_on: string | null;
+  snooze_until: string | null;
   source: "app" | "capture" | "google_tasks";
   google_tasks_id: string | null;
   completed_at: string | null;
