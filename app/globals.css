@@ -588,6 +588,20 @@ button.title-edit {
   color: var(--ink);
   font-weight: 500;
 }
+.add-event-btn {
+  align-self: flex-start;
+  border: 1px dashed var(--hair);
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.add-event-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 .idea {
   background: var(--surface);

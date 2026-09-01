@@ -6,13 +6,14 @@ import {
   isOnToday,
   isWaiting,
 } from "@/lib/data";
-import { getTodayEvents } from "@/lib/google";
+import { getTodayEvents, isGoogleConnected } from "@/lib/google";
 import { hourInTz, todayInTz } from "@/lib/tz";
 import { getTimeZone } from "@/lib/tz.server";
 import { unparkTodo } from "@/app/(app)/actions";
 import TodoRow from "@/components/TodoRow";
 import EventRow from "@/components/EventRow";
 import QuickAddTodo from "@/components/QuickAddTodo";
+import AddEventButton from "@/components/AddEventButton";
 import PlanLink from "@/components/PlanLink";
 import Gear from "@/components/Gear";
 import type { Project, Todo } from "@/lib/types";
@@ -64,11 +65,12 @@ function rank(t: Todo, today: string): number {
 export default async function TodayPage() {
   const { user } = await requireUser();
   const tz = await getTimeZone();
-  const [projects, open, doneToday, events] = await Promise.all([
+  const [projects, open, doneToday, events, connected] = await Promise.all([
     getProjects(),
     getOpenTodos(),
     getDoneToday(),
     getTodayEvents(tz),
+    isGoogleConnected(),
   ]);
   const byId = new Map<string, Project>(projects.map((p) => [p.id, p]));
   const today = todayInTz(tz);
@@ -152,6 +154,7 @@ export default async function TodayPage() {
         )}
 
         <QuickAddTodo projects={projects} />
+        {connected && <AddEventButton tz={tz} />}
 
         {(above > 0 || below > 0) && (
           <ul className="list">

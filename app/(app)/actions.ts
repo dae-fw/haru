@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { nextDueDate, toISODate } from "@/lib/recurrence";
-import { updateCalendarEvent } from "@/lib/google";
+import { createCalendarEvent, updateCalendarEvent } from "@/lib/google";
 import type { Recurrence, Todo } from "@/lib/types";
 
 function revalidateAll() {
@@ -195,6 +195,14 @@ export async function deleteIdea(id: string) {
   const { supabase } = await requireUser();
   await supabase.from("haru_ideas").delete().eq("id", id);
   revalidateAll();
+}
+
+/** Create a calendar event from the app. */
+export async function createEvent(input: { title: string; start: string; end: string }) {
+  await requireUser();
+  const ok = await createCalendarEvent(input);
+  if (ok) revalidateAll();
+  return !!ok;
 }
 
 /** Rename / reschedule a calendar event from the app. No delete — see build brief. */
