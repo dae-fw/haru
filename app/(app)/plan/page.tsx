@@ -1,34 +1,63 @@
 import { requireUser } from "@/lib/auth";
-import { getOpenTodos, getProjects } from "@/lib/data";
+import { getDoneToday, getIdeas, getOpenTodos, getProjects } from "@/lib/data";
 import { getTodayEvents, isGoogleConnected } from "@/lib/google";
 import { getTimeZone } from "@/lib/tz.server";
-import { openingMessage, type PlanContext } from "@/lib/plan";
+import { openingMessage, type PlanContext, type PlanMode } from "@/lib/plan";
 import PlanChat from "@/components/PlanChat";
 import Gear from "@/components/Gear";
 
 export const dynamic = "force-dynamic";
 
-export default async function PlanPage() {
+export default async function PlanPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ m?: string }>;
+}) {
   await requireUser();
-  const tz = await getTimeZone();
+  const [{ m }, tz] = await Promise.all([searchParams, getTimeZone()]);
+  const mode: PlanMode = m === "night" ? "night" : "day";
+
   const [projects, todos, connected] = await Promise.all([
     getProjects(),
     getOpenTodos(),
     isGoogleConnected(),
   ]);
-  const events = connected ? await getTodayEvents(tz) : [];
-  const ctx: PlanContext = { todos, projects, events, googleConnected: connected, tz };
+  const events = mode === "day" && connected ? await getTodayEvents(tz) : [];
+
+  let doneToday, staleIdea;
+  if (mode === "night") {
+    const [done, ideas] = await Promise.all([getDoneToday(), getIdeas()]);
+    doneToday = done;
+    const cutoff = Date.now() - 10 * 864e5;
+    const old = ideas.filter((i) => new Date(i.created_at).getTime() < cutoff);
+    staleIdea = old.length ? old[Math.floor(Math.random() * old.length)] : null;
+  }
+
+  const ctx: PlanContext = {
+    mode,
+    todos,
+    projects,
+    events,
+    googleConnected: connected,
+    tz,
+    doneToday,
+    staleIdea,
+  };
 
   return (
     <>
       <header className="screen-head">
         <div className="eyebrow">Plan · Haiku 4.5</div>
-        <h1>Plan the day together</h1>
-        <div className="sub">Knows your todos{connected ? " and calendar" : ""}</div>
+        <h1>{mode === "night" ? "Goodnight recap" : "Plan the day together"}</h1>
+        <div className="sub">
+          {mode === "night"
+            ? "What got done, what rolls to tomorrow"
+            : `Knows your todos${connected ? " and calendar" : ""}`}
+        </div>
         <Gear />
       </header>
       <div className="body plan-body">
-        <PlanChat opening={openingMessage(ctx)} />
+        <PlanChat opening={openingMessage(ctx)} mode={mode} />
       </div>
     </>
   );

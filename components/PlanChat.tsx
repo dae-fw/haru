@@ -9,7 +9,13 @@ interface Turn {
   actions?: string[];
 }
 
-export default function PlanChat({ opening }: { opening: string }) {
+export default function PlanChat({
+  opening,
+  mode = "day",
+}: {
+  opening: string;
+  mode?: "day" | "night";
+}) {
   const router = useRouter();
   const [turns, setTurns] = useState<Turn[]>([
     { role: "assistant", content: opening },
@@ -17,6 +23,12 @@ export default function PlanChat({ opening }: { opening: string }) {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // reset when the mode (opening) changes
+  useEffect(() => {
+    setTurns([{ role: "assistant", content: opening }]);
+    setDraft("");
+  }, [opening]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -34,6 +46,7 @@ export default function PlanChat({ opening }: { opening: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          mode,
           messages: next.map(({ role, content }) => ({ role, content })),
         }),
       });
@@ -53,8 +66,35 @@ export default function PlanChat({ opening }: { opening: string }) {
     }
   }
 
+  function clearChat() {
+    setTurns([{ role: "assistant", content: opening }]);
+    setDraft("");
+  }
+
   return (
     <>
+      <div className="plan-modebar">
+        <div className="seg">
+          <button
+            className={mode === "day" ? "on" : ""}
+            onClick={() => router.push("/plan")}
+          >
+            Plan the day
+          </button>
+          <button
+            className={mode === "night" ? "on" : ""}
+            onClick={() => router.push("/plan?m=night")}
+          >
+            Goodnight recap
+          </button>
+        </div>
+        {turns.length > 1 && (
+          <button className="plan-clear" onClick={clearChat}>
+            Clear
+          </button>
+        )}
+      </div>
+
       <div className="chat-scroll" ref={scrollRef}>
         {turns.map((t, i) => (
           <div key={i} style={{ display: "contents" }}>
@@ -79,7 +119,9 @@ export default function PlanChat({ opening }: { opening: string }) {
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="What would you like to focus on?"
+          placeholder={
+            mode === "night" ? "Move or note anything before bed?" : "What would you like to focus on?"
+          }
           disabled={busy}
         />
         <button type="submit" aria-label="Send" disabled={busy || !draft.trim()}>

@@ -473,12 +473,17 @@ select {
   stroke-width: 3.2;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-dasharray: 22;
-  stroke-dashoffset: 22;
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  opacity: 0;
 }
 .row.done .check {
   background: var(--good);
   border-color: var(--good);
+}
+.row.done .check svg,
+.row.playing .check svg {
+  opacity: 1;
 }
 .row.done .check svg {
   stroke-dashoffset: 0;
@@ -801,6 +806,26 @@ button.title-edit {
 }
 
 /* plan chat layout */
+.plan-modebar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.plan-modebar .seg {
+  flex: 1;
+}
+.plan-clear {
+  flex: none;
+  border: 1px solid var(--hair);
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
 .plan-body {
   overflow: hidden;
   gap: 0;

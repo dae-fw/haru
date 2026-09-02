@@ -1,10 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { getOpenTodos, getProjects } from "@/lib/data";
+import { getDoneToday, getIdeas, getOpenTodos, getProjects } from "@/lib/data";
 import { getTodayEvents, isGoogleConnected, createCalendarEvent, moveCalendarEvent } from "@/lib/google";
 import { getTimeZone } from "@/lib/tz.server";
-import { buildSystemPrompt, PLAN_MODEL, type PlanContext } from "@/lib/plan";
+import { buildSystemPrompt, PLAN_MODEL, type PlanContext, type PlanMode } from "@/lib/plan";
 import {
   completeTodo,
   rescheduleTodo,
@@ -26,7 +26,11 @@ export async function POST(req: Request) {
     });
   }
 
-  const body = (await req.json()) as { messages: { role: "user" | "assistant"; content: string }[] };
+  const body = (await req.json()) as {
+    messages: { role: "user" | "assistant"; content: string }[];
+    mode?: string;
+  };
+  const mode: PlanMode = body.mode === "night" ? "night" : "day";
   const history: Msg[] = (body.messages ?? [])
     .filter((m) => m.content?.trim())
     .map((m) => ({ role: m.role, content: m.content }));
@@ -40,8 +44,27 @@ export async function POST(req: Request) {
     getOpenTodos(),
     isGoogleConnected(),
   ]);
-  const events = connected ? await getTodayEvents(tz) : [];
-  const ctx: PlanContext = { todos, projects, events, googleConnected: connected, tz };
+  const events = mode === "day" && connected ? await getTodayEvents(tz) : [];
+
+  let doneToday, staleIdea;
+  if (mode === "night") {
+    const [done, ideas] = await Promise.all([getDoneToday(), getIdeas()]);
+    doneToday = done;
+    const cutoff = Date.now() - 10 * 864e5;
+    const old = ideas.filter((i) => new Date(i.created_at).getTime() < cutoff);
+    staleIdea = old.length ? old[Math.floor(Math.random() * old.length)] : null;
+  }
+
+  const ctx: PlanContext = {
+    mode,
+    todos,
+    projects,
+    events,
+    googleConnected: connected,
+    tz,
+    doneToday,
+    staleIdea,
+  };
 
   const tools: Anthropic.Tool[] = [
     {

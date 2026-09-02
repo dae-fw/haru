@@ -1,15 +1,62 @@
 import type { CalEvent } from "@/lib/google";
 import { timeInTz, todayInTz } from "@/lib/tz";
-import type { Project, Todo } from "@/lib/types";
+import type { Idea, Project, Todo } from "@/lib/types";
 
 export const PLAN_MODEL = "claude-haiku-4-5";
 
+export type PlanMode = "day" | "night";
+
 export interface PlanContext {
+  mode: PlanMode;
   todos: Todo[];
   projects: Project[];
   events: CalEvent[];
   googleConnected: boolean;
   tz: string;
+  doneToday?: Todo[];
+  staleIdea?: Idea | null;
+}
+
+/** Open todos that were due today or earlier and didn't get done — they "roll" to tomorrow. */
+export function rollingTomorrow(todos: Todo[], today: string): Todo[] {
+  return todos.filter(
+    (t) => t.status === "open" && t.due_date != null && t.due_date <= today,
+  );
+}
+
+export function goodnightMessage(ctx: PlanContext): string {
+  const today = todayInTz(ctx.tz);
+  const done = ctx.doneToday ?? [];
+  const rolling = rollingTomorrow(ctx.todos, today);
+
+  const parts: string[] = [];
+  parts.push(
+    done.length
+      ? `You closed ${done.length} thing${done.length > 1 ? "s" : ""} today${
+          done.length >= 4 ? " — a good run" : ""
+        }.`
+      : "A quiet one today.",
+  );
+  parts.push(
+    rolling.length
+      ? `${rolling.length} roll${rolling.length > 1 ? "" : "s"} to tomorrow: ${rolling
+          .slice(0, 3)
+          .map((t) => t.title)
+          .join(", ")}${rolling.length > 3 ? "…" : ""}.`
+      : "Nothing left hanging.",
+  );
+  if (ctx.staleIdea) {
+    const when = new Date(ctx.staleIdea.created_at).toLocaleDateString("en-US", {
+      timeZone: ctx.tz,
+      month: "short",
+      day: "numeric",
+    });
+    parts.push(
+      `One from your ideas (${when}): “${ctx.staleIdea.body}”. Still worth doing?`,
+    );
+  }
+  parts.push("Anything you want to move or note before bed?");
+  return parts.join("\n\n");
 }
 
 /** Explicit priority order (from the build brief — not left to the model to guess). */
@@ -36,6 +83,7 @@ function dayPart(tz: string): string {
 }
 
 export function openingMessage(ctx: PlanContext): string {
+  if (ctx.mode === "night") return goodnightMessage(ctx);
   const today = todayInTz(ctx.tz);
   const ranked = rankToday(ctx.todos, today);
   const pname = (id: string | null) =>
@@ -101,11 +149,33 @@ export function buildSystemPrompt(ctx: PlanContext): string {
         .join("\n")
     : "(none)";
 
-  return `You are Haru, a calm daily planning assistant for one person. Today is ${today} (timezone ${ctx.tz}).
+  const doneLines = (ctx.doneToday ?? [])
+    .map((t) => `- "${t.title}"`)
+    .join("\n");
+  const rolling = rollingTomorrow(ctx.todos, today);
+  const rollingLines = rolling.map((t) => `- id=${t.id} "${t.title}"`).join("\n");
+
+  const role =
+    ctx.mode === "night"
+      ? `You are Haru, winding down the day with one person. It is evening on ${today} (timezone ${ctx.tz}).
+
+Your job: a short recap — what got done, what's rolling to tomorrow — then help them move or note anything before bed. Optionally resurface the stale idea below if it fits. Be brief and warm; one or two sentences per reply. Ask one thing at a time.
+
+DONE TODAY:
+${doneLines || "(nothing logged)"}
+
+ROLLING TO TOMORROW (open, was due today or earlier):
+${rollingLines || "(none)"}
+${ctx.staleIdea ? `\nSTALE IDEA you may resurface: "${ctx.staleIdea.body}"` : ""}
+
+PRIORITY ORDER (for anything they want to reprioritise):`
+      : `You are Haru, a calm daily planning assistant for one person. Today is ${today} (timezone ${ctx.tz}).
 
 Your job: help them decide what to work on, surface conflicts between their tasks and calendar, and make small changes when asked. Be brief and warm — a sentence or two per reply, not paragraphs. Ask one question at a time.
 
-PRIORITY ORDER (use this exact order when suggesting what to do first):
+PRIORITY ORDER (use this exact order when suggesting what to do first):`;
+
+  return `${role}
 1. Overdue todos
 2. Todos due today
 3. Todos tied to a project that has a calendar event today
