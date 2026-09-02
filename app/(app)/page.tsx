@@ -14,6 +14,7 @@ import TodoRow from "@/components/TodoRow";
 import EventRow from "@/components/EventRow";
 import QuickAddTodo from "@/components/QuickAddTodo";
 import QueuedTasks from "@/components/QueuedTasks";
+import EarlierToday from "@/components/EarlierToday";
 import AddEventButton from "@/components/AddEventButton";
 import PlanLink from "@/components/PlanLink";
 import Gear from "@/components/Gear";
@@ -107,7 +108,8 @@ export default async function TodayPage() {
     .filter((e) => e.allDay || new Date(e.end).getTime() >= now)
     .sort((a, b) => (a.allDay ? -1 : 0) - (b.allDay ? -1 : 0) || a.start.localeCompare(b.start));
 
-  const above = pastEvents.length + overdue.length;
+  // past events + tasks done today collapse into <EarlierToday>; overdue stays visible.
+  const above = overdue.length;
   const below = upcomingEvents.length + rest.length;
 
   const name = displayName(
@@ -170,11 +172,10 @@ export default async function TodayPage() {
         {connected && <AddEventButton />}
         <QueuedTasks />
 
+        <EarlierToday events={pastEvents} done={doneToday} projects={projects} tz={tz} />
+
         {(above > 0 || below > 0) && (
           <ul className="list">
-            {pastEvents.map((e) => (
-              <EventRow key={e.id} event={e} past tz={tz} />
-            ))}
             {overdue.map((t) => (
               <TodoRow
                 key={t.id}
@@ -230,24 +231,6 @@ export default async function TodayPage() {
                 </div>
               </div>
             ))}
-          </div>
-        )}
-
-        {doneCount > 0 && (
-          <div className="group">
-            <h2>
-              Done today <span className="count">{doneCount}</span>
-            </h2>
-            <ul className="list">
-              {doneToday.map((t) => (
-                <TodoRow
-                  key={t.id}
-                  todo={t}
-                  showTools={false}
-                  project={t.project_id ? byId.get(t.project_id) : undefined}
-                />
-              ))}
-            </ul>
           </div>
         )}
 

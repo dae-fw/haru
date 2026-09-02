@@ -323,6 +323,92 @@ select {
   gap: 6px;
 }
 
+/* Earlier-today collapsible */
+.earlier-block {
+  display: flex;
+  flex-direction: column;
+}
+.earlier {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px dashed var(--hair);
+  background: transparent;
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  color: var(--ink-soft);
+  font: 500 0.78rem var(--font-sans);
+  transition: border-color 0.15s, color 0.15s;
+}
+.earlier:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.earlier:active {
+  transform: scale(0.99);
+}
+.earlier .cnt {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+}
+.earlier .chev {
+  margin-left: auto;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.earlier[aria-expanded="true"] .chev {
+  transform: rotate(180deg);
+}
+.earlier-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.earlier-wrap.open {
+  grid-template-rows: 1fr;
+}
+.earlier-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+.earlier-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.2s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.earlier-wrap.open .earlier-body {
+  opacity: 1;
+  transform: none;
+}
+.earlier-body .sub-h {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  margin: 6px 0 2px;
+}
+/* one-shot rise on the rows when it opens */
+.earlier-wrap.pop .earlier-body ul > * {
+  animation: earlier-rise 0.32s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.earlier-wrap.pop .earlier-body ul > *:nth-child(1) { animation-delay: 0.03s; }
+.earlier-wrap.pop .earlier-body ul > *:nth-child(2) { animation-delay: 0.07s; }
+.earlier-wrap.pop .earlier-body ul > *:nth-child(3) { animation-delay: 0.11s; }
+.earlier-wrap.pop .earlier-body ul > *:nth-child(4) { animation-delay: 0.15s; }
+.earlier-wrap.pop .earlier-body ul > *:nth-child(n + 5) { animation-delay: 0.18s; }
+@keyframes earlier-rise {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+}
+
 .now-line {
   display: flex;
   align-items: center;
@@ -1139,7 +1225,11 @@ button.title-edit {
   .tabicon,
   .tabbar a,
   .tabbar a.sel,
-  .tabbar a:active {
+  .tabbar a:active,
+  .earlier .chev,
+  .earlier-wrap,
+  .earlier-body,
+  .earlier-wrap.pop .earlier-body ul > * {
     transition: none !important;
     animation: none !important;
     transform: none !important;
