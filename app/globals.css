@@ -224,7 +224,6 @@ select {
   font-size: 0.8rem;
   color: var(--accent);
   background: var(--accent-soft);
-  border: 1px solid var(--hair);
   border-radius: 999px;
   padding: 3px 12px;
 }
