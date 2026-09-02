@@ -36,6 +36,7 @@ export default function QuickAddTodo({
     const due = parsed.dueDate ?? (dueToday ? todayLocalISO() : "");
     if (due) fd.set("due_date", due);
     if (parsed.flagged) fd.set("flagged", "on");
+    if (parsed.recurrence) fd.set("recurrence", JSON.stringify(parsed.recurrence));
     start(async () => {
       await addTodo(fd);
       setText("");

@@ -59,7 +59,10 @@ export function nextDueDate(rule: Recurrence, fromISO: string): string {
 }
 
 export function describeRecurrence(rule: Recurrence): string {
-  if (rule.type === "everyN") return `every ${rule.n ?? 1} day${(rule.n ?? 1) === 1 ? "" : "s"}`;
+  if (rule.type === "everyN") {
+    const n = rule.n ?? 1;
+    return n === 1 ? "daily" : n === 2 ? "every other day" : `every ${n} days`;
+  }
   if (rule.type === "monthly") return `every ${ordinal(rule.dayOfMonth ?? 1)}`;
   if (rule.type === "weekly") {
     const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

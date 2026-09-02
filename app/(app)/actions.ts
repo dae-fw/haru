@@ -21,12 +21,24 @@ export async function addTodo(formData: FormData) {
   const due = String(formData.get("due_date") ?? "") || null;
   const flagged = formData.get("flagged") === "on";
 
+  let recurrence: unknown = null;
+  const recRaw = String(formData.get("recurrence") ?? "");
+  if (recRaw) {
+    try {
+      const r = JSON.parse(recRaw);
+      if (r && typeof r.type === "string") recurrence = r;
+    } catch {
+      /* ignore */
+    }
+  }
+
   await supabase.from("haru_todos").insert({
     user_id: user.id,
     title,
     project_id: projectId,
     due_date: due,
     flagged,
+    recurrence,
   });
   revalidateAll();
 }

@@ -1,10 +1,12 @@
-import type { Project } from "@/lib/types";
+import { describeRecurrence } from "@/lib/recurrence";
+import type { Project, Recurrence } from "@/lib/types";
 
 export interface ParsedTodo {
   title: string;
   dueDate?: string; // yyyy-mm-dd (local)
   projectId?: string;
   flagged?: boolean;
+  recurrence?: Recurrence;
   hints: string[]; // human-readable, for the live preview
 }
 
@@ -107,6 +109,14 @@ export function parseTodoInput(raw: string, projects: Project[]): ParsedTodo {
     }
   }
 
+  // --- recurrence (before date, so "every tuesday" isn't read as a one-off) ---
+  const rec = extractRecurrence(text);
+  if (rec) {
+    out.recurrence = rec.rule;
+    hints.push(`↻ ${describeRecurrence(rec.rule)}`);
+    text = text.replace(rec.match, " ");
+  }
+
   // --- date ---
   const date = extractDate(text);
   if (date) {
@@ -115,8 +125,84 @@ export function parseTodoInput(raw: string, projects: Project[]): ParsedTodo {
     text = text.replace(date.match, " ");
   }
 
+  // a recurring task with no explicit date starts at its first occurrence
+  if (out.recurrence && !out.dueDate) {
+    out.dueDate = firstOccurrence(out.recurrence);
+    hints.push(`starts ${labelFor(out.dueDate)}`);
+  }
+
   out.title = text.replace(/\s+/g, " ").trim() || raw.trim();
   return out;
+}
+
+function firstOccurrence(rule: Recurrence): string {
+  if (rule.type === "everyN") return iso(addDays(0));
+  if (rule.type === "monthly") return iso(nextMonthDay(rule.dayOfMonth ?? 1));
+  const days = (rule.weekdays ?? []).slice().sort((a, b) => a - b);
+  if (days.length === 0) return iso(addDays(0));
+  const soonest = days
+    .map((d) => nextWeekday(d))
+    .sort((a, b) => a.getTime() - b.getTime())[0];
+  return iso(soonest);
+}
+
+const WD_RE = "sun|mon|tue|wed|thu|fri|sat";
+function weekdayIndex(tok: string): number {
+  const k = tok.slice(0, 3).toLowerCase();
+  return DAYS_SHORT.indexOf(k);
+}
+
+function extractRecurrence(
+  text: string,
+): { rule: Recurrence; match: string } | null {
+  const t = text.toLowerCase();
+
+  let m = t.match(/(^|\s)(every ?day|daily)(\s|$)/);
+  if (m) return { rule: { type: "everyN", n: 1 }, match: m[0] };
+
+  m = t.match(/(^|\s)every other day(\s|$)/);
+  if (m) return { rule: { type: "everyN", n: 2 }, match: m[0] };
+
+  m = t.match(/(^|\s)every (\d{1,3}) days?(\s|$)/);
+  if (m) return { rule: { type: "everyN", n: Math.max(1, Number(m[2])) }, match: m[0] };
+
+  m = t.match(/(^|\s)every weekday(s)?(\s|$)/);
+  if (m) return { rule: { type: "weekly", weekdays: [1, 2, 3, 4, 5] }, match: m[0] };
+
+  m = t.match(/(^|\s)every weekend(s)?(\s|$)/);
+  if (m) return { rule: { type: "weekly", weekdays: [0, 6] }, match: m[0] };
+
+  // "every 15th" / "monthly on the 15th" / "monthly"
+  m = t.match(/(^|\s)(monthly|every month)(\s+on(\s+the)?\s+(\d{1,2})(st|nd|rd|th)?)?(\s|$)/);
+  if (m) {
+    const dom = m[5] ? Number(m[5]) : new Date().getDate();
+    return { rule: { type: "monthly", dayOfMonth: Math.min(31, Math.max(1, dom)) }, match: m[0] };
+  }
+  m = t.match(/(^|\s)every (\d{1,2})(st|nd|rd|th)(\s|$)/);
+  if (m) {
+    const dom = Number(m[2]);
+    if (dom >= 1 && dom <= 31)
+      return { rule: { type: "monthly", dayOfMonth: dom }, match: m[0] };
+  }
+
+  // "every tuesday and thursday", "repeat every tue, thu", "each mon & wed", "every tues + thurs"
+  const list = t.match(
+    new RegExp(
+      `(^|\\s)(?:repeat\\s+)?(?:every|each)\\s+((?:${WD_RE})[a-z]*(?:\\s*(?:,|and|&|\\+|/|\\s)\\s*(?:${WD_RE})[a-z]*)*)(\\s|$)`,
+    ),
+  );
+  if (list) {
+    const toks = list[2].match(new RegExp(`(?:${WD_RE})[a-z]*`, "g")) ?? [];
+    const idx = Array.from(new Set(toks.map(weekdayIndex).filter((i) => i >= 0))).sort(
+      (a, b) => a - b,
+    );
+    if (idx.length) return { rule: { type: "weekly", weekdays: idx }, match: list[0] };
+  }
+
+  m = t.match(/(^|\s)(weekly|every week)(\s|$)/);
+  if (m) return { rule: { type: "weekly", weekdays: [] }, match: m[0] };
+
+  return null;
 }
 
 function extractDate(text: string): { iso: string; match: string } | null {
