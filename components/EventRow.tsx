@@ -1,9 +1,5 @@
-"use client";
-
-import { useState } from "react";
 import { timeInTz } from "@/lib/tz";
 import type { CalEvent } from "@/lib/google";
-import EditEventSheet from "@/components/EditEventSheet";
 
 export default function EventRow({
   event,
@@ -14,20 +10,33 @@ export default function EventRow({
   past?: boolean;
   tz: string;
 }) {
-  const [edit, setEdit] = useState(false);
   const when = event.allDay ? "all day" : timeInTz(event.start, tz);
+
+  const inner = (
+    <>
+      <div className="title">{event.title}</div>
+      <div className="meta">
+        <span className="chip">calendar ↗</span>
+        {event.location && <span className="chip">📍 {event.location}</span>}
+      </div>
+    </>
+  );
 
   return (
     <li className={`row event${past ? " past" : ""}`}>
       <span className="when">{when}</span>
-      <button className="main event-edit" onClick={() => setEdit(true)}>
-        <div className="title">{event.title}</div>
-        <div className="meta">
-          <span className="chip">calendar</span>
-          {event.location && <span className="chip">📍 {event.location}</span>}
-        </div>
-      </button>
-      {edit && <EditEventSheet event={event} tz={tz} onClose={() => setEdit(false)} />}
+      {event.htmlLink ? (
+        <a
+          className="main event-open"
+          href={event.htmlLink}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {inner}
+        </a>
+      ) : (
+        <div className="main">{inner}</div>
+      )}
     </li>
   );
 }
