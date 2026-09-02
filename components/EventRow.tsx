@@ -16,7 +16,7 @@ export default function EventRow({
     <>
       <div className="title">{event.title}</div>
       <div className="meta">
-        <span className="chip">calendar ↗</span>
+        <span className="chip">{event.calendarName ?? "calendar"} ↗</span>
         {event.location && <span className="chip">📍 {event.location}</span>}
       </div>
     </>

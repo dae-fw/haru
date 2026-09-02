@@ -2,7 +2,8 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
-const CAL_BASE = "https://www.googleapis.com/calendar/v3/calendars/primary";
+const CAL_API = "https://www.googleapis.com/calendar/v3";
+const CAL_BASE = `${CAL_API}/calendars/primary`; // create/update land on the primary calendar
 
 export const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/calendar.events",
@@ -18,6 +19,7 @@ export interface CalEvent {
   end: string; // ISO
   allDay: boolean;
   location?: string;
+  calendarName?: string; // set when the event is on a non-primary calendar
   htmlLink?: string;
 }
 
@@ -78,14 +80,17 @@ async function accessToken(): Promise<string | null> {
   return json.access_token;
 }
 
-function normalize(e: {
-  id: string;
-  summary?: string;
-  location?: string;
-  htmlLink?: string;
-  start: { dateTime?: string; date?: string };
-  end: { dateTime?: string; date?: string };
-}): CalEvent {
+function normalize(
+  e: {
+    id: string;
+    summary?: string;
+    location?: string;
+    htmlLink?: string;
+    start: { dateTime?: string; date?: string };
+    end: { dateTime?: string; date?: string };
+  },
+  calendarName?: string,
+): CalEvent {
   const allDay = !e.start.dateTime;
   return {
     id: e.id,
@@ -94,6 +99,7 @@ function normalize(e: {
     end: e.end.dateTime ?? `${e.end.date}T00:00:00`,
     allDay,
     location: e.location || undefined,
+    calendarName,
     htmlLink: e.htmlLink,
   };
 }
@@ -114,25 +120,61 @@ function tzOffset(tz: string, at: Date): string {
   return "+00:00";
 }
 
+interface CalListEntry {
+  id: string;
+  summary?: string;
+  primary?: boolean;
+  selected?: boolean;
+}
+
+/** Today's events across every calendar in the account that's shown in Google Calendar. */
 export const getTodayEvents = cache(async (tz: string = "UTC"): Promise<CalEvent[]> => {
   if (!CONFIGURED) return [];
   const token = await accessToken();
   if (!token) return [];
-  const now = new Date();
-  const date = now.toLocaleDateString("en-CA", { timeZone: tz }); // yyyy-mm-dd in tz
-  const off = tzOffset(tz, now);
-  const start = `${date}T00:00:00${off}`;
-  const end = `${date}T23:59:59${off}`;
-  const url = `${CAL_BASE}/events?timeMin=${encodeURIComponent(start)}&timeMax=${encodeURIComponent(
-    end,
-  )}&singleEvents=true&orderBy=startTime&maxResults=50`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (!res.ok) {
-    console.error("google events fetch failed", await res.text());
-    return [];
+  const auth = { Authorization: `Bearer ${token}` };
+
+  // 1. which calendars does this account have?
+  let cals: CalListEntry[] = [{ id: "primary", primary: true }];
+  const listRes = await fetch(
+    `${CAL_API}/users/me/calendarList?minAccessRole=reader&fields=items(id,summary,primary,selected)`,
+    { headers: auth },
+  );
+  if (listRes.ok) {
+    const list = (await listRes.json()) as { items?: CalListEntry[] };
+    const visible = (list.items ?? []).filter((c) => c.selected !== false);
+    if (visible.length) cals = visible;
+  } else {
+    console.error("google calendarList failed", await listRes.text());
   }
-  const json = (await res.json()) as { items?: Parameters<typeof normalize>[0][] };
-  return (json.items ?? []).map(normalize);
+
+  // 2. today's window in the viewer's timezone
+  const now = new Date();
+  const date = now.toLocaleDateString("en-CA", { timeZone: tz });
+  const off = tzOffset(tz, now);
+  const timeMin = encodeURIComponent(`${date}T00:00:00${off}`);
+  const timeMax = encodeURIComponent(`${date}T23:59:59${off}`);
+
+  // 3. fetch each calendar's events in parallel
+  const perCal = await Promise.all(
+    cals.map(async (c) => {
+      const url = `${CAL_API}/calendars/${encodeURIComponent(
+        c.id,
+      )}/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=50`;
+      const r = await fetch(url, { headers: auth });
+      if (!r.ok) return [] as CalEvent[];
+      const j = (await r.json()) as { items?: Parameters<typeof normalize>[0][] };
+      const label = c.primary ? undefined : c.summary;
+      return (j.items ?? []).map((e) => normalize(e, label));
+    }),
+  );
+
+  // 4. merge, dedupe (a shared event shows on more than one calendar), sort
+  const seen = new Set<string>();
+  return perCal
+    .flat()
+    .filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)))
+    .sort((a, b) => a.start.localeCompare(b.start));
 });
 
 /** For the Plan chat (step 3) and the Add-event sheet. */
