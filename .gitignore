@@ -19,3 +19,8 @@ next-env.d.ts
 # next 16 auto-generated agent rules
 AGENTS.md
 CLAUDE.md
+
+# secrets — never commit
+client_secret*.json
+*credentials*.json
+*.pem
