@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { getDoneToday, getOpenTodos, getProjects, isWaiting } from "@/lib/data";
-import AddTodo from "@/components/AddTodo";
+import QuickAddTodo from "@/components/QuickAddTodo";
 import TodoRow from "@/components/TodoRow";
 import Gear from "@/components/Gear";
 import type { Project, Todo } from "@/lib/types";
@@ -36,7 +36,7 @@ export default async function AllPage() {
       </header>
 
       <div className="body">
-        <AddTodo projects={projects} />
+        <QuickAddTodo projects={projects} dueToday={false} />
 
         {buckets.map((b) => (
           <div className="group" key={b.title}>

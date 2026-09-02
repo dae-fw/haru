@@ -1,5 +1,6 @@
 "use client";
 
+import Portal from "@/components/Portal";
 import { useState, useTransition } from "react";
 import { createEvent } from "@/app/(app)/actions";
 import { fromLocalInput, toLocalInput } from "@/lib/tz";
@@ -46,6 +47,7 @@ export default function AddEventSheet({ tz, onClose }: { tz: string; onClose: ()
   }
 
   return (
+    <Portal>
     <div className="sheet-wrap" role="dialog" aria-modal="true">
       <div className="sheet-bd" onClick={onClose} />
       <div className="sheet">
@@ -107,5 +109,6 @@ export default function AddEventSheet({ tz, onClose }: { tz: string; onClose: ()
         </div>
       </div>
     </div>
+  </Portal>
   );
 }

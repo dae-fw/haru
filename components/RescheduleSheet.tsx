@@ -1,5 +1,6 @@
 "use client";
 
+import Portal from "@/components/Portal";
 import { useRef, useState } from "react";
 import {
   parkTodo,
@@ -83,6 +84,7 @@ export default function RescheduleSheet({
         : `Every ${everyN} day${everyN === 1 ? "" : "s"}`;
 
   return (
+    <Portal>
     <div className="sheet-wrap" role="dialog" aria-modal="true">
       <div className="sheet-bd" onClick={onClose} />
       <div className="sheet">
@@ -198,5 +200,6 @@ export default function RescheduleSheet({
         </div>
       </div>
     </div>
+  </Portal>
   );
 }

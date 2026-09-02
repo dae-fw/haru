@@ -15,9 +15,12 @@ function todayLocalISO() {
 export default function QuickAddTodo({
   projects = [],
   placeholder = "Add a task…",
+  dueToday = true,
 }: {
   projects?: Project[];
   placeholder?: string;
+  /** default new tasks to today's date (Today screen) vs. no date (All list) */
+  dueToday?: boolean;
 }) {
   const [text, setText] = useState("");
   const [pending, start] = useTransition();
@@ -30,7 +33,8 @@ export default function QuickAddTodo({
     const fd = new FormData();
     fd.set("title", parsed.title || t);
     fd.set("project_id", parsed.projectId ?? "");
-    fd.set("due_date", parsed.dueDate ?? todayLocalISO());
+    const due = parsed.dueDate ?? (dueToday ? todayLocalISO() : "");
+    if (due) fd.set("due_date", due);
     if (parsed.flagged) fd.set("flagged", "on");
     start(async () => {
       await addTodo(fd);

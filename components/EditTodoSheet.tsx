@@ -1,5 +1,6 @@
 "use client";
 
+import Portal from "@/components/Portal";
 import { useState, useTransition } from "react";
 import { updateTodo } from "@/app/(app)/actions";
 import type { Project, Todo } from "@/lib/types";
@@ -45,6 +46,7 @@ export default function EditTodoSheet({
   };
 
   return (
+    <Portal>
     <div className="sheet-wrap" role="dialog" aria-modal="true">
       <div className="sheet-bd" onClick={onClose} />
       <div className="sheet">
@@ -110,5 +112,6 @@ export default function EditTodoSheet({
         </div>
       </div>
     </div>
+  </Portal>
   );
 }

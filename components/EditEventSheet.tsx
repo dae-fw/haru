@@ -1,5 +1,6 @@
 "use client";
 
+import Portal from "@/components/Portal";
 import { useState, useTransition } from "react";
 import { updateEvent } from "@/app/(app)/actions";
 import { fromLocalInput, toLocalInput } from "@/lib/tz";
@@ -47,6 +48,7 @@ export default function EditEventSheet({
   }
 
   return (
+    <Portal>
     <div className="sheet-wrap" role="dialog" aria-modal="true">
       <div className="sheet-bd" onClick={onClose} />
       <div className="sheet">
@@ -121,5 +123,6 @@ export default function EditEventSheet({
         </div>
       </div>
     </div>
+  </Portal>
   );
 }
