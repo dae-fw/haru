@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import ThemeProvider from "@/components/ThemeProvider";
+import SWRegister from "@/components/SWRegister";
 import "./globals.css";
 
 const sans = IBM_Plex_Sans({
@@ -57,6 +58,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <SWRegister />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

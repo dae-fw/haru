@@ -5,6 +5,7 @@ import { getTimeZone } from "@/lib/tz.server";
 import TabBar from "@/components/TabBar";
 import TzSync from "@/components/TzSync";
 import ThemeSync from "@/components/ThemeSync";
+import OfflineBar from "@/components/OfflineBar";
 
 export default async function AppLayout({
   children,
@@ -24,6 +25,7 @@ export default async function AppLayout({
 
   return (
     <div className="shell">
+      <OfflineBar />
       <TzSync />
       <ThemeSync palette={meta.palette} theme={meta.theme} />
       <canvas id="fx" className="fx" aria-hidden="true" />

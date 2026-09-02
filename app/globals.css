@@ -208,6 +208,16 @@ select {
   font-size: 0.82rem;
   margin-top: 3px;
 }
+.offline-bar {
+  flex: none;
+  background: var(--warn);
+  color: #1a1206;
+  font-size: 0.76rem;
+  font-weight: 500;
+  text-align: center;
+  padding: 6px 14px;
+}
+
 .cat-nudge {
   margin-top: 8px;
   display: inline-flex;
