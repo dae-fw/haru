@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { getDoneToday, getOpenTodos, getProjects, isWaiting } from "@/lib/data";
+import { unparkTodo } from "@/app/(app)/actions";
 import QuickAddTodo from "@/components/QuickAddTodo";
 import TodoRow from "@/components/TodoRow";
 import Gear from "@/components/Gear";
@@ -16,6 +17,7 @@ export default async function AllPage() {
   ]);
   const byId = new Map<string, Project>(projects.map((p) => [p.id, p]));
   const active = open.filter((t) => !isWaiting(t));
+  const waiting = open.filter(isWaiting);
 
   const buckets: { title: string; color?: string; items: Todo[] }[] = [
     ...projects.map((p) => ({
@@ -31,7 +33,10 @@ export default async function AllPage() {
       <header className="screen-head">
         <div className="eyebrow">All todos</div>
         <h1>The full list</h1>
-        <div className="sub">{active.length} open across {buckets.length} groups</div>
+        <div className="sub">
+          {active.length} open{waiting.length ? ` · ${waiting.length} waiting` : ""} across{" "}
+          {buckets.length} groups
+        </div>
         <Gear />
       </header>
 
@@ -45,24 +50,63 @@ export default async function AllPage() {
             </h2>
             <ul className="list">
               {b.items.map((t) => (
-                <TodoRow key={t.id} todo={t} projects={projects} project={t.project_id ? byId.get(t.project_id) : undefined} />
+                <TodoRow
+                  key={t.id}
+                  todo={t}
+                  projects={projects}
+                  project={t.project_id ? byId.get(t.project_id) : undefined}
+                />
               ))}
             </ul>
           </div>
         ))}
 
+        {waiting.length > 0 && (
+          <div className="waiting">
+            <h2>Waiting on others · {waiting.length}</h2>
+            {waiting.map((t) => (
+              <div key={t.id}>
+                <div className="w-title">{t.title}</div>
+                <div className="w-meta">
+                  {t.waiting_on ? `Waiting on ${t.waiting_on}. ` : ""}
+                  {t.wake_at
+                    ? `Back on ${new Date(t.wake_at).toLocaleDateString(undefined, {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      })}. `
+                    : ""}
+                  <form action={unparkTodo.bind(null, t.id)} style={{ display: "inline" }}>
+                    <button type="submit" className="linkish">
+                      It&apos;s here now →
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {doneToday.length > 0 && (
           <div className="group">
-            <h2>Done today <span className="count">{doneToday.length}</span></h2>
+            <h2>
+              Done today <span className="count">{doneToday.length}</span>
+            </h2>
             <ul className="list">
               {doneToday.map((t) => (
-                <TodoRow key={t.id} todo={t} projects={projects} showTools={false} project={t.project_id ? byId.get(t.project_id) : undefined} />
+                <TodoRow
+                  key={t.id}
+                  todo={t}
+                  projects={projects}
+                  showTools={false}
+                  project={t.project_id ? byId.get(t.project_id) : undefined}
+                />
               ))}
             </ul>
           </div>
         )}
 
-        {active.length === 0 && (
+        {active.length === 0 && waiting.length === 0 && (
           <div className="empty">No open todos. Add one above.</div>
         )}
       </div>

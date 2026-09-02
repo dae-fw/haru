@@ -27,7 +27,13 @@ async function handler(req: Request) {
   const user = userList?.users.find((u) => u.email?.toLowerCase() === ALLOWED);
   if (!user) return Response.json({ error: "no user" }, { status: 404 });
 
+  const { data: prefs } = await admin
+    .from("haru_prefs")
+    .select("tz")
+    .eq("user_id", user.id)
+    .maybeSingle();
   const tz =
+    (prefs?.tz as string | undefined) ||
     (user.user_metadata?.tz as string | undefined) ||
     process.env.HARU_TZ ||
     "UTC";

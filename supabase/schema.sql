@@ -83,6 +83,15 @@ create table if not exists public.haru_push_subs (
 );
 create index if not exists haru_push_subs_user_idx on public.haru_push_subs (user_id);
 
+-- ---------- per-user prefs (synced across devices, read fresh not from JWT) ----------
+create table if not exists public.haru_prefs (
+  user_id    uuid primary key default auth.uid() references auth.users (id) on delete cascade,
+  palette    text,
+  theme      text,
+  tz         text,
+  updated_at timestamptz not null default now()
+);
+
 -- ---------- updated_at triggers ----------
 drop trigger if exists haru_projects_updated_at on public.haru_projects;
 create trigger haru_projects_updated_at before update on public.haru_projects
@@ -102,11 +111,12 @@ alter table public.haru_todos          enable row level security;
 alter table public.haru_ideas          enable row level security;
 alter table public.haru_google_tokens  enable row level security;
 alter table public.haru_push_subs      enable row level security;
+alter table public.haru_prefs          enable row level security;
 
 do $$
 declare t text;
 begin
-  foreach t in array array['haru_projects', 'haru_todos', 'haru_ideas', 'haru_google_tokens', 'haru_push_subs'] loop
+  foreach t in array array['haru_projects', 'haru_todos', 'haru_ideas', 'haru_google_tokens', 'haru_push_subs', 'haru_prefs'] loop
     execute format('drop policy if exists %I_owner on public.%I', t, t);
     execute format(
       'create policy %I_owner on public.%I

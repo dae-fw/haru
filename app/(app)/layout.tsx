@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { getOpenTodos, isOnToday } from "@/lib/data";
+import { getOpenTodos, getPrefs, isOnToday } from "@/lib/data";
 import { todayInTz } from "@/lib/tz";
 import { getTimeZone } from "@/lib/tz.server";
 import TabBar from "@/components/TabBar";
@@ -13,23 +13,25 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = await requireUser(); // gate every app route
+  await requireUser(); // gate every app route
 
-  const [open, tz] = await Promise.all([getOpenTodos(), getTimeZone()]);
+  const [open, tz, prefs] = await Promise.all([
+    getOpenTodos(),
+    getTimeZone(),
+    getPrefs(),
+  ]);
   const today = todayInTz(tz);
   const overdue = open.filter(
     (t) => t.status !== "waiting" && t.due_date != null && t.due_date < today,
   ).length;
   const todayCount = open.filter((t) => isOnToday(t, today)).length;
 
-  const meta = user.user_metadata as { palette?: "a" | "b" | "c"; theme?: "light" | "dark" | "system" };
-
   return (
     <div className="shell">
       <OfflineBar />
       <OfflineSync />
       <TzSync />
-      <ThemeSync palette={meta.palette} theme={meta.theme} />
+      <ThemeSync palette={prefs?.palette ?? undefined} theme={prefs?.theme ?? undefined} />
       <canvas id="fx" className="fx" aria-hidden="true" />
       {children}
       <TabBar overdue={overdue} todayCount={todayCount} />

@@ -240,24 +240,26 @@ export async function disconnectGoogle() {
   revalidatePath("/settings");
 }
 
+/** Palette + theme live in haru_prefs (read fresh on every load) so a change on
+ *  one device shows on all of them without waiting for a token refresh. */
 export async function setAppearance(patch: {
   palette?: "a" | "b" | "c";
   theme?: "light" | "dark" | "system";
 }) {
   const { user, supabase } = await requireUser();
-  const current = (user.user_metadata ?? {}) as Record<string, unknown>;
-  await supabase.auth.updateUser({
-    data: { ...current, ...patch },
-  });
+  await supabase
+    .from("haru_prefs")
+    .upsert({ user_id: user.id, ...patch, updated_at: new Date().toISOString() });
+  revalidatePath("/", "layout");
 }
 
-/** Store the viewer's timezone on their profile so scheduled jobs (morning nudge) know it. */
+/** Timezone also lives in haru_prefs — the cron reads it there. */
 export async function saveTimeZone(tz: string) {
-  if (!/^[A-Za-z_]+\/[A-Za-z0-9_+-]+/.test(tz) && tz !== "UTC") return;
+  if (tz !== "UTC" && !/^[A-Za-z_]+\/[A-Za-z0-9_+-]+/.test(tz)) return;
   const { user, supabase } = await requireUser();
-  const current = (user.user_metadata ?? {}) as Record<string, unknown>;
-  if (current.tz === tz) return;
-  await supabase.auth.updateUser({ data: { ...current, tz } });
+  await supabase
+    .from("haru_prefs")
+    .upsert({ user_id: user.id, tz, updated_at: new Date().toISOString() });
 }
 
 export async function setNickname(formData: FormData) {

@@ -48,6 +48,22 @@ export const getIdeas = cache(async (): Promise<Idea[]> => {
   return (data as Idea[]) ?? [];
 });
 
+export interface Prefs {
+  palette?: "a" | "b" | "c" | null;
+  theme?: "light" | "dark" | "system" | null;
+  tz?: string | null;
+}
+
+/** Per-user prefs, read fresh (not from the JWT) so they sync across devices right away. */
+export const getPrefs = cache(async (): Promise<Prefs | null> => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("haru_prefs")
+    .select("palette, theme, tz")
+    .maybeSingle();
+  return (data as Prefs) ?? null;
+});
+
 /** Todos that belong on the Today screen: overdue, due today, flagged, or a "waiting" item whose wake time has passed. */
 export function isOnToday(t: Todo, today: string = todayISO()): boolean {
   const now = new Date().toISOString();
