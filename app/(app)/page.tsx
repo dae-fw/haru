@@ -166,7 +166,7 @@ export default async function TodayPage() {
         )}
 
         <QuickAddTodo projects={projects} />
-        {connected && <AddEventButton tz={tz} />}
+        {connected && <AddEventButton />}
 
         {(above > 0 || below > 0) && (
           <ul className="list">

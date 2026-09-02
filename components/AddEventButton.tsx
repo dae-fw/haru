@@ -1,16 +1,12 @@
-"use client";
-
-import { useState } from "react";
-import AddEventSheet from "@/components/AddEventSheet";
-
-export default function AddEventButton({ tz }: { tz: string }) {
-  const [open, setOpen] = useState(false);
+export default function AddEventButton() {
   return (
-    <>
-      <button type="button" className="add-event-btn" onClick={() => setOpen(true)}>
-        + Add event
-      </button>
-      {open && <AddEventSheet tz={tz} onClose={() => setOpen(false)} />}
-    </>
+    <a
+      className="add-event-btn"
+      href="https://calendar.google.com/calendar/u/0/r/eventedit"
+      target="_blank"
+      rel="noreferrer"
+    >
+      + Add event ↗
+    </a>
   );
 }
