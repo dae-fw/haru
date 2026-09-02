@@ -219,16 +219,14 @@ select {
 }
 
 .cat-nudge {
-  margin-top: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  margin-top: 6px;
+  display: inline-block;
   font-size: 0.8rem;
   color: var(--accent);
   background: var(--accent-soft);
   border: 1px solid var(--hair);
   border-radius: 999px;
-  padding: 3px 11px 3px 9px;
+  padding: 3px 12px;
 }
 .gear {
   position: absolute;

@@ -73,6 +73,16 @@ create table if not exists public.haru_google_tokens (
   updated_at    timestamptz not null default now()
 );
 
+-- ---------- web-push subscriptions ----------
+create table if not exists public.haru_push_subs (
+  endpoint    text primary key,
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  p256dh      text not null,
+  auth        text not null,
+  created_at  timestamptz not null default now()
+);
+create index if not exists haru_push_subs_user_idx on public.haru_push_subs (user_id);
+
 -- ---------- updated_at triggers ----------
 drop trigger if exists haru_projects_updated_at on public.haru_projects;
 create trigger haru_projects_updated_at before update on public.haru_projects
@@ -91,11 +101,12 @@ alter table public.haru_projects       enable row level security;
 alter table public.haru_todos          enable row level security;
 alter table public.haru_ideas          enable row level security;
 alter table public.haru_google_tokens  enable row level security;
+alter table public.haru_push_subs      enable row level security;
 
 do $$
 declare t text;
 begin
-  foreach t in array array['haru_projects', 'haru_todos', 'haru_ideas', 'haru_google_tokens'] loop
+  foreach t in array array['haru_projects', 'haru_todos', 'haru_ideas', 'haru_google_tokens', 'haru_push_subs'] loop
     execute format('drop policy if exists %I_owner on public.%I', t, t);
     execute format(
       'create policy %I_owner on public.%I

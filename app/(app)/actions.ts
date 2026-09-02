@@ -251,6 +251,15 @@ export async function setAppearance(patch: {
   });
 }
 
+/** Store the viewer's timezone on their profile so scheduled jobs (morning nudge) know it. */
+export async function saveTimeZone(tz: string) {
+  if (!/^[A-Za-z_]+\/[A-Za-z0-9_+-]+/.test(tz) && tz !== "UTC") return;
+  const { user, supabase } = await requireUser();
+  const current = (user.user_metadata ?? {}) as Record<string, unknown>;
+  if (current.tz === tz) return;
+  await supabase.auth.updateUser({ data: { ...current, tz } });
+}
+
 export async function setNickname(formData: FormData) {
   const { user, supabase } = await requireUser();
   const nickname = String(formData.get("nickname") ?? "").trim().slice(0, 40);

@@ -2,7 +2,7 @@
    Read-only offline: you can open the app and see your most recent
    Today / All / Capture screens. Edits still need a connection. */
 
-const VERSION = "haru-v1";
+const VERSION = "haru-v2";
 const SHELL = `${VERSION}-shell`;
 const PAGES = `${VERSION}-pages`;
 const ASSETS = `${VERSION}-assets`;
@@ -45,6 +45,39 @@ function isAsset(url) {
     /\.(?:css|js|woff2?|png|jpg|jpeg|svg|ico)$/.test(url.pathname)
   );
 }
+
+self.addEventListener("push", (event) => {
+  let d = {};
+  try {
+    d = event.data ? event.data.json() : {};
+  } catch {
+    d = { body: event.data && event.data.text() };
+  }
+  event.waitUntil(
+    self.registration.showNotification(d.title || "Haru", {
+      body: d.body || "",
+      tag: d.tag || "haru",
+      renotify: true,
+      data: { url: d.url || "/" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
+      for (const w of wins) {
+        if ("focus" in w) {
+          w.navigate(target).catch(() => {});
+          return w.focus();
+        }
+      }
+      return self.clients.openWindow(target);
+    }),
+  );
+});
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;

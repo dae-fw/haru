@@ -4,6 +4,7 @@ import { isGoogleConnected } from "@/lib/google";
 import { addProject, disconnectGoogle, setNickname } from "@/app/(app)/actions";
 import ThemeControls from "@/components/ThemeControls";
 import ConfirmButton from "@/components/ConfirmButton";
+import NotificationToggle from "@/components/NotificationToggle";
 import { VERSION_LABEL } from "@/lib/version";
 
 export const dynamic = "force-dynamic";
@@ -54,6 +55,8 @@ export default async function SettingsPage({
         </div>
 
         <ThemeControls />
+
+        <NotificationToggle />
 
         <div className="settings-block">
           <div className="label">Google Calendar</div>

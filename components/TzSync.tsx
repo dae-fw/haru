@@ -2,8 +2,10 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { saveTimeZone } from "@/app/(app)/actions";
 
-/** Writes the browser's IANA timezone to a cookie so server components format dates locally. */
+/** Writes the browser's IANA timezone to a cookie (for server rendering) and to
+ *  the user's profile (for scheduled jobs like the morning nudge). */
 export default function TzSync() {
   const router = useRouter();
   useEffect(() => {
@@ -18,6 +20,7 @@ export default function TzSync() {
         document.cookie = `haru_tz=${encodeURIComponent(tz)}; path=/; max-age=31536000; samesite=lax`;
         router.refresh();
       }
+      void saveTimeZone(tz);
     } catch {
       /* ignore */
     }

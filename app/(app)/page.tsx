@@ -58,7 +58,7 @@ function haruSays(h: number, tz: string): string {
   const list = h >= 6 && h < 20 ? HARU_DAY : HARU_NIGHT;
   const day = new Date().toLocaleDateString("en-CA", { timeZone: tz });
   const daySeed = day.split("-").reduce((a, n) => a + Number(n), 0);
-  const seed = daySeed * 7 + Math.floor(h / 4); // shifts ~every 4 hours
+  const seed = daySeed * 5 + Math.floor(h / 6); // shifts every 6 hours
   return list[seed % list.length];
 }
 
@@ -147,11 +147,9 @@ export default async function TodayPage() {
         <h1>
           {greeting(hourInTz(tz))}, {name}
         </h1>
+        <div className="cat-nudge">{haruSays(hourInTz(tz), tz)}</div>
         <div className="sub">
           {open.length} open · {waitingList.length} waiting · {doneCount} done
-        </div>
-        <div className="cat-nudge">
-          <span aria-hidden>🐾</span> {haruSays(hourInTz(tz), tz)}
         </div>
         <Gear />
       </header>
