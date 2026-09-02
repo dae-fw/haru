@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { addTodo } from "@/app/(app)/actions";
 import { parseTodoInput } from "@/lib/nlp";
+import { enqueue } from "@/lib/offlineQueue";
 import type { Project } from "@/lib/types";
 
 function todayLocalISO() {
@@ -30,10 +31,25 @@ export default function QuickAddTodo({
   function submit() {
     const t = text.trim();
     if (!t || pending) return;
-    const fd = new FormData();
-    fd.set("title", parsed.title || t);
-    fd.set("project_id", parsed.projectId ?? "");
+    const title = parsed.title || t;
     const due = parsed.dueDate ?? (dueToday ? todayLocalISO() : "");
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      enqueue({
+        type: "add",
+        title,
+        dueDate: due || undefined,
+        projectId: parsed.projectId,
+        flagged: parsed.flagged,
+        recurrence: parsed.recurrence,
+      });
+      setText("");
+      return;
+    }
+
+    const fd = new FormData();
+    fd.set("title", title);
+    fd.set("project_id", parsed.projectId ?? "");
     if (due) fd.set("due_date", due);
     if (parsed.flagged) fd.set("flagged", "on");
     if (parsed.recurrence) fd.set("recurrence", JSON.stringify(parsed.recurrence));

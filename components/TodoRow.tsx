@@ -1,8 +1,9 @@
 "use client";
 
-import { useOptimistic, useRef, useState, useTransition } from "react";
+import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { completeTodo, reopenTodo } from "@/app/(app)/actions";
 import { burstFrom } from "@/lib/confetti";
+import { enqueue, offlineCompletedIds, onQueueChange } from "@/lib/offlineQueue";
 import { describeRecurrence, todayISO } from "@/lib/recurrence";
 import type { Project, Todo } from "@/lib/types";
 import RescheduleSheet from "@/components/RescheduleSheet";
@@ -27,22 +28,39 @@ export default function TodoRow({
   const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [optDone, setOptDone] = useOptimistic(todo.status === "done");
-  const done = optDone;
+  // completed while offline, waiting to sync
+  const [queuedDone, setQueuedDone] = useState(false);
+  useEffect(() => {
+    const sync = () => setQueuedDone(offlineCompletedIds().has(todo.id));
+    sync();
+    return onQueueChange(sync);
+  }, [todo.id]);
+  const done = optDone || queuedDone;
 
   const today = todayISO();
   const overdue = !done && todo.due_date != null && todo.due_date < today;
   const dueToday = !done && todo.due_date === today;
 
   function toggle() {
-    if (!done) {
+    const goingDone = !done;
+    if (goingDone) {
       if (checkRef.current) burstFrom(checkRef.current, 22);
       setPlaying(true);
       if (playTimer.current) clearTimeout(playTimer.current);
       playTimer.current = setTimeout(() => setPlaying(false), 650);
     }
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      if (goingDone) {
+        enqueue({ type: "complete", todoId: todo.id });
+        setQueuedDone(true);
+      }
+      return; // no reopen offline
+    }
+
     start(async () => {
-      setOptDone(!done);
-      await (done ? reopenTodo(todo.id) : completeTodo(todo.id));
+      setOptDone(goingDone);
+      await (goingDone ? completeTodo(todo.id) : reopenTodo(todo.id));
     });
   }
 

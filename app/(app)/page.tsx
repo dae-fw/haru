@@ -13,6 +13,7 @@ import { unparkTodo } from "@/app/(app)/actions";
 import TodoRow from "@/components/TodoRow";
 import EventRow from "@/components/EventRow";
 import QuickAddTodo from "@/components/QuickAddTodo";
+import QueuedTasks from "@/components/QueuedTasks";
 import AddEventButton from "@/components/AddEventButton";
 import PlanLink from "@/components/PlanLink";
 import Gear from "@/components/Gear";
@@ -167,6 +168,7 @@ export default async function TodayPage() {
 
         <QuickAddTodo projects={projects} />
         {connected && <AddEventButton />}
+        <QueuedTasks />
 
         {(above > 0 || below > 0) && (
           <ul className="list">
