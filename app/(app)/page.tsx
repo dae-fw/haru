@@ -26,25 +26,37 @@ function greeting(h: number) {
   return "Good evening";
 }
 
-const CAT_DAY = [
-  "Give Haru a pat",
-  "Fresh water for Haru",
-  "Play with Haru for five minutes",
-  "Check Haru has food",
-  "Say hi to Haru",
-  "Brush Haru",
+// Haru (the cat) talking. Rotates a few times through the day.
+const HARU_DAY = [
+  "Did you feed me yet? I genuinely can't remember.",
+  "Chin scratches. Now would be good.",
+  "The sunny spot is taken. By me. Fresh water though?",
+  "I knocked something off the table earlier. You're welcome.",
+  "Pet me for exactly eight seconds. I'll say when to stop.",
+  "I'm not hungry… okay maybe a little.",
+  "Play with me? The string one. You know the one.",
+  "Been guarding the window all morning. It's exhausting.",
+  "You were gone forty whole seconds. Never again.",
+  "Brush me. I'm shedding on the good chair on purpose.",
+  "Refill the water bowl or I drink from your glass. Your call.",
+  "One (1) treat and I'll leave your keyboard alone.",
 ];
-const CAT_NIGHT = [
-  "Give Haru a kiss goodnight",
-  "One more chin scratch for Haru",
-  "Tuck Haru in",
-  "Check Haru's water before bed",
-  "Cuddle Haru",
+const HARU_NIGHT = [
+  "Goodnight kiss? On the head, not the nose.",
+  "Come to bed. I saved you a spot — it's the middle.",
+  "One more chin scratch and I'll let you sleep. Maybe.",
+  "Did you lock the door? Also: treats.",
+  "Fair warning: zoomies at 3am. Sleep well.",
+  "Cuddle me. Body heat is a shared resource.",
+  "Top up my water before bed. Judging you all night is thirsty work.",
+  "Tuck me in. I'll move the second you're done.",
+  "I'll be a loaf on your legs shortly. Don't move.",
 ];
-function catNudge(h: number, tz: string): string {
-  const list = h < 17 ? CAT_DAY : CAT_NIGHT;
+function haruSays(h: number, tz: string): string {
+  const list = h >= 6 && h < 20 ? HARU_DAY : HARU_NIGHT;
   const day = new Date().toLocaleDateString("en-CA", { timeZone: tz });
-  const seed = day.split("-").reduce((a, n) => a + Number(n), 0);
+  const daySeed = day.split("-").reduce((a, n) => a + Number(n), 0);
+  const seed = daySeed * 7 + Math.floor(h / 4); // shifts ~every 4 hours
   return list[seed % list.length];
 }
 
@@ -136,7 +148,7 @@ export default async function TodayPage() {
           {open.length} open · {waitingList.length} waiting · {doneCount} done
         </div>
         <div className="cat-nudge">
-          <span aria-hidden>🐾</span> {catNudge(hourInTz(tz), tz)}
+          <span aria-hidden>🐾</span> {haruSays(hourInTz(tz), tz)}
         </div>
         <Gear />
       </header>
