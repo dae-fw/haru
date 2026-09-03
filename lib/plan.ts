@@ -1,5 +1,11 @@
 import type { CalEvent } from "@/lib/google";
+import { fmt12 } from "@/lib/nlp";
 import { timeInTz, todayInTz } from "@/lib/tz";
+
+/** " at 3:00 PM" when a todo carries a time, else "". */
+function atTime(t: Todo): string {
+  return t.due_time ? ` at ${fmt12(t.due_time)}` : "";
+}
 
 /** YYYY-MM-DD for the local day after `today`. */
 function nextDay(today: string): string {
@@ -50,7 +56,7 @@ export function goodnightMessage(ctx: PlanContext): string {
     rolling.length
       ? `${rolling.length} roll${rolling.length > 1 ? "" : "s"} to tomorrow: ${rolling
           .slice(0, 3)
-          .map((t) => t.title)
+          .map((t) => `${t.title}${atTime(t)}`)
           .join(", ")}${rolling.length > 3 ? "…" : ""}.`
       : "Nothing left hanging.",
   );
@@ -73,7 +79,7 @@ export function goodnightMessage(ctx: PlanContext): string {
       bits.push(
         `${dueTmr.length} task${dueTmr.length > 1 ? "s" : ""} due (${dueTmr
           .slice(0, 3)
-          .map((t) => t.title)
+          .map((t) => `${t.title}${atTime(t)}`)
           .join(", ")}${dueTmr.length > 3 ? "…" : ""})`,
       );
     }
@@ -157,7 +163,7 @@ function tomorrowLine(ctx: PlanContext, today: string): string | null {
     bits.push(
       `${dueTmr.length} task${dueTmr.length > 1 ? "s" : ""} due (${dueTmr
         .slice(0, 3)
-        .map((t) => t.title)
+        .map((t) => `${t.title}${atTime(t)}`)
         .join(", ")}${dueTmr.length > 3 ? "…" : ""})`,
     );
   }
@@ -188,7 +194,7 @@ export function openingMessage(ctx: PlanContext): string {
               : t.flagged
                 ? "flagged"
                 : "";
-      return `${i + 1}. ${t.title} — ${pname(t.project_id)}${tag ? ` (${tag})` : ""}`;
+      return `${i + 1}. ${t.title}${atTime(t)} — ${pname(t.project_id)}${tag ? ` (${tag})` : ""}`;
     });
     parts.push(`Good ${dayPart(ctx.tz)}. Here's the order I'd go in:\n\n${lines.join("\n")}`);
   } else if (ctx.events.length) {
@@ -241,7 +247,7 @@ export function buildSystemPrompt(ctx: PlanContext): string {
         `id=${t.id}`,
         `"${t.title}"`,
         `project=${proj(t.project_id)}`,
-        t.due_date ? `due=${t.due_date}` : "no due date",
+        t.due_date ? `due=${t.due_date}${t.due_time ? ` ${t.due_time}` : ""}` : "no due date",
         t.status === "waiting" ? "WAITING on someone" : null,
         t.flagged ? "FLAGGED" : null,
         t.recurrence ? "recurring" : null,
@@ -271,7 +277,9 @@ export function buildSystemPrompt(ctx: PlanContext): string {
     ...(ctx.tomorrowEvents ?? []).map(
       (e) => `- ${e.allDay ? "all day" : `${e.start} → ${e.end}`} "${e.title}"`,
     ),
-    ...dueTmr.map((t) => `- task due: id=${t.id} "${t.title}"`),
+    ...dueTmr.map(
+      (t) => `- task due: id=${t.id} "${t.title}"${t.due_time ? ` at ${t.due_time}` : ""}`,
+    ),
   ].join("\n");
 
   const role = `You are Haru, a calm daily companion for one person. Today is ${today} (timezone ${ctx.tz}), ${dayPart(ctx.tz)}.

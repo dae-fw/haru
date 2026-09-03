@@ -3,6 +3,7 @@
 import Portal from "@/components/Portal";
 import { useState, useTransition } from "react";
 import { deleteTodo, demoteToIdea, updateTodo } from "@/app/(app)/actions";
+import { todayISO } from "@/lib/recurrence";
 import type { Project, Subtask, Todo } from "@/lib/types";
 
 export default function EditTodoSheet({
@@ -34,12 +35,14 @@ export default function EditTodoSheet({
 
   function save() {
     if (!title.trim() || pending) return;
+    // A time on its own implies "today".
+    const effectiveDue = due || (dueTime ? todayISO() : "");
     start(async () => {
       await updateTodo(todo.id, {
         title,
         project_id: projectId || null,
-        due_date: due || null,
-        due_time: due ? dueTime || null : null,
+        due_date: effectiveDue || null,
+        due_time: effectiveDue ? dueTime || null : null,
         flagged,
         notes,
         subtasks: subs,
@@ -99,23 +102,24 @@ export default function EditTodoSheet({
             </button>
           )}
         </div>
-        {due && (
-          <>
-            <label className="sec">Time (optional)</label>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
-              <input
-                type="time"
-                style={{ ...field, marginTop: 0, flex: 1 }}
-                value={dueTime}
-                onChange={(e) => setDueTime(e.target.value)}
-              />
-              {dueTime && (
-                <button type="button" className="btn" onClick={() => setDueTime("")}>
-                  Clear
-                </button>
-              )}
-            </div>
-          </>
+        <label className="sec">Time</label>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+          <input
+            type="time"
+            style={{ ...field, marginTop: 0, flex: 1 }}
+            value={dueTime}
+            onChange={(e) => setDueTime(e.target.value)}
+          />
+          {dueTime && (
+            <button type="button" className="btn" onClick={() => setDueTime("")}>
+              Clear
+            </button>
+          )}
+        </div>
+        {dueTime && !due && (
+          <div style={{ fontSize: "0.76rem", color: "var(--ink-soft)", marginTop: 4 }}>
+            No date set — this will be due today.
+          </div>
         )}
 
         <label className="sec" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>

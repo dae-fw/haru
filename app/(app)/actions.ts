@@ -1,9 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { nextDueDate, toISODate } from "@/lib/recurrence";
-import { completeGoogleTask, createCalendarEvent, updateCalendarEvent } from "@/lib/google";
+import {
+  completeGoogleTask,
+  createCalendarEvent,
+  createGoogleTask,
+  updateCalendarEvent,
+  updateGoogleTask,
+} from "@/lib/google";
 import type { Recurrence, Todo } from "@/lib/types";
 
 function revalidateAll() {
@@ -33,16 +40,34 @@ export async function addTodo(formData: FormData) {
     }
   }
 
-  await supabase.from("haru_todos").insert({
-    user_id: user.id,
-    title,
-    project_id: projectId,
-    due_date: due,
-    due_time: due ? dueTime : null,
-    flagged,
-    recurrence,
-  });
+  const { data: inserted } = await supabase
+    .from("haru_todos")
+    .insert({
+      user_id: user.id,
+      title,
+      project_id: projectId,
+      due_date: due,
+      due_time: due ? dueTime : null,
+      flagged,
+      recurrence,
+    })
+    .select("id")
+    .single();
+
   revalidateAll();
+
+  // Mirror it out to Google Tasks after the response — never blocks the add.
+  if (inserted?.id) {
+    after(async () => {
+      const gid = await createGoogleTask({ title, dueDate: due });
+      if (gid) {
+        await supabase
+          .from("haru_todos")
+          .update({ google_tasks_id: gid })
+          .eq("id", inserted.id);
+      }
+    });
+  }
 }
 
 export async function completeTodo(id: string) {
@@ -188,6 +213,25 @@ export async function updateTodo(
   if (Object.keys(update).length === 0) return;
   await supabase.from("haru_todos").update(update).eq("id", id);
   revalidateAll();
+
+  // Keep a linked Google task's title / due date in step — after the response.
+  if (update.title !== undefined || update.due_date !== undefined) {
+    after(async () => {
+      const { data: row } = await supabase
+        .from("haru_todos")
+        .select("google_tasks_id")
+        .eq("id", id)
+        .single();
+      if (row?.google_tasks_id) {
+        await updateGoogleTask(row.google_tasks_id as string, {
+          ...(update.title !== undefined ? { title: update.title as string } : {}),
+          ...(update.due_date !== undefined
+            ? { dueDate: (update.due_date as string | null) ?? null }
+            : {}),
+        });
+      }
+    });
+  }
 }
 
 export async function toggleSubtask(todoId: string, subId: string) {
