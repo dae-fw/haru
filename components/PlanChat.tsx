@@ -9,6 +9,24 @@ interface Turn {
   actions?: string[];
 }
 
+// The thread lives in sessionStorage: it survives hopping to Today and back,
+// and clears itself when the app/tab is closed. No server copy, nothing to expire.
+const keyFor = (mode: string) => `haru.plan.${mode}`;
+
+function loadThread(mode: string, opening: string): Turn[] {
+  const fresh: Turn[] = [{ role: "assistant", content: opening }];
+  try {
+    const raw = sessionStorage.getItem(keyFor(mode));
+    if (!raw) return fresh;
+    const saved = JSON.parse(raw) as Turn[];
+    if (!Array.isArray(saved) || saved.length < 2) return fresh;
+    // keep the conversation, but let the briefing reflect right now
+    return [fresh[0], ...saved.slice(1)];
+  } catch {
+    return fresh;
+  }
+}
+
 export default function PlanChat({
   opening,
   mode = "day",
@@ -17,18 +35,39 @@ export default function PlanChat({
   mode?: "day" | "night";
 }) {
   const router = useRouter();
-  const [turns, setTurns] = useState<Turn[]>([
+  const [turns, setTurns] = useState<Turn[]>(() => [
     { role: "assistant", content: opening },
   ]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // reset when the mode (opening) changes
+  // restore any in-progress thread for this mode on mount / mode switch
   useEffect(() => {
-    setTurns([{ role: "assistant", content: opening }]);
+    setTurns(loadThread(mode, opening));
     setDraft("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
+  // keep the first (briefing) turn current without wiping the conversation
+  useEffect(() => {
+    setTurns((t) =>
+      t.length && t[0].content !== opening
+        ? [{ role: "assistant", content: opening }, ...t.slice(1)]
+        : t,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opening]);
+
+  // persist (only once there's a real exchange)
+  useEffect(() => {
+    try {
+      if (turns.length > 1) sessionStorage.setItem(keyFor(mode), JSON.stringify(turns));
+      else sessionStorage.removeItem(keyFor(mode));
+    } catch {
+      /* private mode / quota — fine, just don't persist */
+    }
+  }, [turns, mode]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -69,31 +108,22 @@ export default function PlanChat({
   function clearChat() {
     setTurns([{ role: "assistant", content: opening }]);
     setDraft("");
+    try {
+      sessionStorage.removeItem(keyFor(mode));
+    } catch {
+      /* ignore */
+    }
   }
 
   return (
     <>
-      <div className="plan-modebar">
-        <div className="seg">
-          <button
-            className={mode === "day" ? "on" : ""}
-            onClick={() => router.push("/plan")}
-          >
-            Plan the day
-          </button>
-          <button
-            className={mode === "night" ? "on" : ""}
-            onClick={() => router.push("/plan?m=night")}
-          >
-            Goodnight recap
+      {turns.length > 1 && (
+        <div className="plan-modebar">
+          <button className="plan-clear" onClick={clearChat}>
+            Clear chat
           </button>
         </div>
-        {turns.length > 1 && (
-          <button className="plan-clear" onClick={clearChat}>
-            Clear
-          </button>
-        )}
-      </div>
+      )}
 
       <div className="chat-scroll" ref={scrollRef}>
         {turns.map((t, i) => (

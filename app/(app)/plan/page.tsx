@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { getDoneToday, getIdeas, getOpenTodos, getProjects } from "@/lib/data";
 import { getTodayEvents, getTomorrowEvents, isGoogleConnected } from "@/lib/google";
 import { getTimeZone } from "@/lib/tz.server";
+import { hourInTz } from "@/lib/tz";
 import { openingMessage, type PlanContext, type PlanMode } from "@/lib/plan";
 import PlanChat from "@/components/PlanChat";
 import Gear from "@/components/Gear";
@@ -15,7 +16,10 @@ export default async function PlanPage({
 }) {
   await requireUser();
   const [{ m }, tz] = await Promise.all([searchParams, getTimeZone()]);
-  const mode: PlanMode = m === "night" ? "night" : "day";
+  // One continuous conversation — it just leans "recap" in the evening.
+  // ?m= still forces a mode (the goodnight push links to ?m=night).
+  const mode: PlanMode =
+    m === "night" ? "night" : m === "day" ? "day" : hourInTz(tz) >= 18 ? "night" : "day";
 
   const [projects, todos, connected] = await Promise.all([
     getProjects(),
@@ -59,6 +63,10 @@ export default async function PlanPage({
           {mode === "night"
             ? "What got done, and what's on for tomorrow"
             : `Knows your todos${connected ? " and calendar" : ""}`}
+          {" · "}
+          <a href={mode === "night" ? "/plan?m=day" : "/plan?m=night"} className="linkish">
+            {mode === "night" ? "plan the day instead" : "goodnight recap instead"}
+          </a>
         </div>
         <Gear />
       </header>

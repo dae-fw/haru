@@ -998,11 +998,9 @@ button.title-edit {
   flex: none;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   margin-bottom: 10px;
-}
-.plan-modebar .seg {
-  flex: 1;
 }
 .plan-clear {
   flex: none;
