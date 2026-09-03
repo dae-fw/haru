@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { getDoneToday, getIdeas, getOpenTodos, getProjects } from "@/lib/data";
-import { getTodayEvents, isGoogleConnected } from "@/lib/google";
+import { getTodayEvents, getTomorrowEvents, isGoogleConnected } from "@/lib/google";
 import { getTimeZone } from "@/lib/tz.server";
 import { openingMessage, type PlanContext, type PlanMode } from "@/lib/plan";
 import PlanChat from "@/components/PlanChat";
@@ -24,10 +24,15 @@ export default async function PlanPage({
   ]);
   const events = mode === "day" && connected ? await getTodayEvents(tz) : [];
 
-  let doneToday, staleIdea;
+  let doneToday, staleIdea, tomorrowEvents;
   if (mode === "night") {
-    const [done, ideas] = await Promise.all([getDoneToday(), getIdeas()]);
+    const [done, ideas, tmr] = await Promise.all([
+      getDoneToday(),
+      getIdeas(),
+      connected ? getTomorrowEvents(tz) : Promise.resolve([]),
+    ]);
     doneToday = done;
+    tomorrowEvents = tmr;
     const cutoff = Date.now() - 10 * 864e5;
     const old = ideas.filter((i) => new Date(i.created_at).getTime() < cutoff);
     staleIdea = old.length ? old[Math.floor(Math.random() * old.length)] : null;
@@ -42,6 +47,7 @@ export default async function PlanPage({
     tz,
     doneToday,
     staleIdea,
+    tomorrowEvents,
   };
 
   return (
@@ -51,7 +57,7 @@ export default async function PlanPage({
         <h1>{mode === "night" ? "Goodnight recap" : "Plan the day together"}</h1>
         <div className="sub">
           {mode === "night"
-            ? "What got done, what rolls to tomorrow"
+            ? "What got done, and what's on for tomorrow"
             : `Knows your todos${connected ? " and calendar" : ""}`}
         </div>
         <Gear />

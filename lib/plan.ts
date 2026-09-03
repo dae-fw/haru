@@ -1,5 +1,12 @@
 import type { CalEvent } from "@/lib/google";
 import { timeInTz, todayInTz } from "@/lib/tz";
+
+/** YYYY-MM-DD for the local day after `today`. */
+function nextDay(today: string): string {
+  const d = new Date(today + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
 import type { Idea, Project, Todo } from "@/lib/types";
 
 export const PLAN_MODEL = "claude-haiku-4-5";
@@ -15,6 +22,7 @@ export interface PlanContext {
   tz: string;
   doneToday?: Todo[];
   staleIdea?: Idea | null;
+  tomorrowEvents?: CalEvent[];
 }
 
 /** Open todos that were due today or earlier and didn't get done — they "roll" to tomorrow. */
@@ -45,6 +53,33 @@ export function goodnightMessage(ctx: PlanContext): string {
           .join(", ")}${rolling.length > 3 ? "…" : ""}.`
       : "Nothing left hanging.",
   );
+
+  // What's already on the plate for tomorrow: tasks due then + calendar.
+  const tmr = nextDay(today);
+  const dueTmr = ctx.todos.filter((t) => t.status === "open" && t.due_date === tmr);
+  const evTmr = ctx.tomorrowEvents ?? [];
+  if (dueTmr.length || evTmr.length) {
+    const bits: string[] = [];
+    if (evTmr.length) {
+      bits.push(
+        evTmr
+          .slice(0, 3)
+          .map((e) => `${e.allDay ? "all day" : timeInTz(e.start, ctx.tz)} ${e.title}`)
+          .join(", ") + (evTmr.length > 3 ? "…" : ""),
+      );
+    }
+    if (dueTmr.length) {
+      bits.push(
+        `${dueTmr.length} task${dueTmr.length > 1 ? "s" : ""} due (${dueTmr
+          .slice(0, 3)
+          .map((t) => t.title)
+          .join(", ")}${dueTmr.length > 3 ? "…" : ""})`,
+      );
+    }
+    parts.push(`Tomorrow: ${bits.join("; ")}.`);
+  } else {
+    parts.push("Tomorrow's clear so far.");
+  }
   if (ctx.staleIdea) {
     const when = new Date(ctx.staleIdea.created_at).toLocaleDateString("en-US", {
       timeZone: ctx.tz,
@@ -155,17 +190,29 @@ export function buildSystemPrompt(ctx: PlanContext): string {
   const rolling = rollingTomorrow(ctx.todos, today);
   const rollingLines = rolling.map((t) => `- id=${t.id} "${t.title}"`).join("\n");
 
+  const tmr = nextDay(today);
+  const dueTmr = ctx.todos.filter((t) => t.status === "open" && t.due_date === tmr);
+  const tomorrowLines = [
+    ...(ctx.tomorrowEvents ?? []).map(
+      (e) => `- ${e.allDay ? "all day" : `${e.start} → ${e.end}`} "${e.title}"`,
+    ),
+    ...dueTmr.map((t) => `- task due: id=${t.id} "${t.title}"`),
+  ].join("\n");
+
   const role =
     ctx.mode === "night"
       ? `You are Haru, winding down the day with one person. It is evening on ${today} (timezone ${ctx.tz}).
 
-Your job: a short recap — what got done, what's rolling to tomorrow — then help them move or note anything before bed. Optionally resurface the stale idea below if it fits. Be brief and warm; one or two sentences per reply. Ask one thing at a time.
+Your job: a short recap — what got done, what's rolling over, and what's already on for tomorrow — then help them move or note anything before bed. Optionally resurface the stale idea below if it fits. Be brief and warm; one or two sentences per reply. Ask one thing at a time.
 
 DONE TODAY:
 ${doneLines || "(nothing logged)"}
 
 ROLLING TO TOMORROW (open, was due today or earlier):
 ${rollingLines || "(none)"}
+
+ALREADY ON FOR TOMORROW (${tmr}) — mention this so they know what they're walking into:
+${tomorrowLines || "(nothing scheduled)"}
 ${ctx.staleIdea ? `\nSTALE IDEA you may resurface: "${ctx.staleIdea.body}"` : ""}
 
 PRIORITY ORDER (for anything they want to reprioritise):`

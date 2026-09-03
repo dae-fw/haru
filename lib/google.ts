@@ -131,54 +131,60 @@ interface CalListEntry {
 }
 
 /** Today's events across every calendar in the account that's shown in Google Calendar. */
-export const getTodayEvents = cache(async (tz: string = "UTC"): Promise<CalEvent[]> => {
-  if (!CONFIGURED) return [];
-  const token = await accessToken();
-  if (!token) return [];
-  const auth = { Authorization: `Bearer ${token}` };
+/** Events across every visible calendar for one local day (dayOffset 0 = today, 1 = tomorrow). */
+const getEventsForOffset = cache(
+  async (tz: string = "UTC", dayOffset: number = 0): Promise<CalEvent[]> => {
+    if (!CONFIGURED) return [];
+    const token = await accessToken();
+    if (!token) return [];
+    const auth = { Authorization: `Bearer ${token}` };
 
-  // 1. which calendars does this account have?
-  let cals: CalListEntry[] = [{ id: "primary", primary: true }];
-  const listRes = await fetch(
-    `${CAL_API}/users/me/calendarList?minAccessRole=reader&fields=items(id,summary,primary,selected)`,
-    { headers: auth },
-  );
-  if (listRes.ok) {
-    const list = (await listRes.json()) as { items?: CalListEntry[] };
-    const visible = (list.items ?? []).filter((c) => c.selected !== false);
-    if (visible.length) cals = visible;
-  } else {
-    console.error("google calendarList failed", await listRes.text());
-  }
+    // 1. which calendars does this account have?
+    let cals: CalListEntry[] = [{ id: "primary", primary: true }];
+    const listRes = await fetch(
+      `${CAL_API}/users/me/calendarList?minAccessRole=reader&fields=items(id,summary,primary,selected)`,
+      { headers: auth },
+    );
+    if (listRes.ok) {
+      const list = (await listRes.json()) as { items?: CalListEntry[] };
+      const visible = (list.items ?? []).filter((c) => c.selected !== false);
+      if (visible.length) cals = visible;
+    } else {
+      console.error("google calendarList failed", await listRes.text());
+    }
 
-  // 2. today's window in the viewer's timezone
-  const now = new Date();
-  const date = now.toLocaleDateString("en-CA", { timeZone: tz });
-  const off = tzOffset(tz, now);
-  const timeMin = encodeURIComponent(`${date}T00:00:00${off}`);
-  const timeMax = encodeURIComponent(`${date}T23:59:59${off}`);
+    // 2. the target day's window in the viewer's timezone
+    const anchor = new Date(Date.now() + dayOffset * 86400000);
+    const date = anchor.toLocaleDateString("en-CA", { timeZone: tz });
+    const off = tzOffset(tz, anchor);
+    const timeMin = encodeURIComponent(`${date}T00:00:00${off}`);
+    const timeMax = encodeURIComponent(`${date}T23:59:59${off}`);
 
-  // 3. fetch each calendar's events in parallel
-  const perCal = await Promise.all(
-    cals.map(async (c) => {
-      const url = `${CAL_API}/calendars/${encodeURIComponent(
-        c.id,
-      )}/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=50`;
-      const r = await fetch(url, { headers: auth });
-      if (!r.ok) return [] as CalEvent[];
-      const j = (await r.json()) as { items?: Parameters<typeof normalize>[0][] };
-      const label = c.primary ? undefined : c.summary;
-      return (j.items ?? []).map((e) => normalize(e, label));
-    }),
-  );
+    // 3. fetch each calendar's events in parallel
+    const perCal = await Promise.all(
+      cals.map(async (c) => {
+        const url = `${CAL_API}/calendars/${encodeURIComponent(
+          c.id,
+        )}/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=50`;
+        const r = await fetch(url, { headers: auth });
+        if (!r.ok) return [] as CalEvent[];
+        const j = (await r.json()) as { items?: Parameters<typeof normalize>[0][] };
+        const label = c.primary ? undefined : c.summary;
+        return (j.items ?? []).map((e) => normalize(e, label));
+      }),
+    );
 
-  // 4. merge, dedupe (a shared event shows on more than one calendar), sort
-  const seen = new Set<string>();
-  return perCal
-    .flat()
-    .filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)))
-    .sort((a, b) => a.start.localeCompare(b.start));
-});
+    // 4. merge, dedupe (a shared event shows on more than one calendar), sort
+    const seen = new Set<string>();
+    return perCal
+      .flat()
+      .filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)))
+      .sort((a, b) => a.start.localeCompare(b.start));
+  },
+);
+
+export const getTodayEvents = (tz: string = "UTC") => getEventsForOffset(tz, 0);
+export const getTomorrowEvents = (tz: string = "UTC") => getEventsForOffset(tz, 1);
 
 /** For the Plan chat (step 3) and the Add-event sheet. */
 export async function createCalendarEvent(input: {

@@ -689,16 +689,19 @@ button.title-edit {
 }
 .subs-list {
   list-style: none;
-  margin-top: 8px;
+  margin-top: 6px;
+  padding-left: 10px;
+  border-left: 2px solid var(--hair);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 .subs-list li {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
+  gap: 7px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
 }
 .subs-list li.done span {
   text-decoration: line-through;
