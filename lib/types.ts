@@ -9,6 +9,12 @@ export interface Recurrence {
 
 export type TodoStatus = "open" | "done" | "waiting";
 
+export interface Subtask {
+  id: string;
+  title: string;
+  done: boolean;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -30,6 +36,7 @@ export interface Todo {
   wake_at: string | null;
   waiting_on: string | null;
   snooze_until: string | null;
+  subtasks: Subtask[];
   source: "app" | "capture" | "google_tasks";
   google_tasks_id: string | null;
   completed_at: string | null;

@@ -1,13 +1,28 @@
 "use client";
 
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
-import { completeTodo, reopenTodo } from "@/app/(app)/actions";
+import { completeTodo, reopenTodo, toggleSubtask } from "@/app/(app)/actions";
 import { burstFrom } from "@/lib/confetti";
 import { enqueue, offlineCompletedIds, onQueueChange } from "@/lib/offlineQueue";
 import { describeRecurrence, todayISO } from "@/lib/recurrence";
 import type { Project, Todo } from "@/lib/types";
 import RescheduleSheet from "@/components/RescheduleSheet";
 import EditTodoSheet from "@/components/EditTodoSheet";
+
+function dueLabel(dateISO: string): string | null {
+  const today = todayISO();
+  if (dateISO <= today) return null; // overdue / due-today chips cover these
+  const d = new Date(dateISO + "T12:00:00");
+  const diff = Math.round((d.getTime() - new Date(today + "T12:00:00").getTime()) / 86400000);
+  if (diff === 1) return "tomorrow";
+  if (diff <= 6) return d.toLocaleDateString(undefined, { weekday: "short" });
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "2-digit" }),
+  });
+}
 
 export default function TodoRow({
   todo,
@@ -23,6 +38,7 @@ export default function TodoRow({
   const [, start] = useTransition();
   const [sheet, setSheet] = useState(false);
   const [edit, setEdit] = useState(false);
+  const [openSubs, setOpenSubs] = useState(false);
   const [playing, setPlaying] = useState(false);
   const checkRef = useRef<HTMLButtonElement>(null);
   const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -40,6 +56,9 @@ export default function TodoRow({
   const today = todayISO();
   const overdue = !done && todo.due_date != null && todo.due_date < today;
   const dueToday = !done && todo.due_date === today;
+  const laterLabel = !done && todo.due_date ? dueLabel(todo.due_date) : null;
+  const subs = todo.subtasks ?? [];
+  const subsDone = subs.filter((s) => s.done).length;
 
   function toggle() {
     const goingDone = !done;
@@ -87,6 +106,7 @@ export default function TodoRow({
         <div className="meta">
           {overdue && <span className="chip overdue">overdue</span>}
           {dueToday && <span className="chip today">due today</span>}
+          {laterLabel && <span className="chip">{laterLabel}</span>}
           {todo.flagged && <span className="chip flag">★ flagged</span>}
           {todo.recurrence && (
             <span className="chip">↻ {describeRecurrence(todo.recurrence)}</span>
@@ -94,6 +114,14 @@ export default function TodoRow({
           {todo.streak > 0 && <span className="chip streak">{todo.streak}-in-a-row</span>}
           {todo.source === "google_tasks" && (
             <span className="chip">from Google Tasks</span>
+          )}
+          {subs.length > 0 && (
+            <button
+              className={`chip subs-chip${openSubs ? " on" : ""}`}
+              onClick={() => setOpenSubs((o) => !o)}
+            >
+              ☑ {subsDone}/{subs.length}
+            </button>
           )}
           {project && (
             <span className="chip">
@@ -112,6 +140,21 @@ export default function TodoRow({
             </>
           )}
         </div>
+
+        {openSubs && subs.length > 0 && (
+          <ul className="subs-list">
+            {subs.map((s) => (
+              <li key={s.id} className={s.done ? "done" : ""}>
+                <button
+                  className={`subcheck${s.done ? " on" : ""}`}
+                  aria-label={s.done ? "Undo subtask" : "Complete subtask"}
+                  onClick={() => start(() => toggleSubtask(todo.id, s.id))}
+                />
+                <span>{s.title}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {sheet && <RescheduleSheet todo={todo} onClose={() => setSheet(false)} />}

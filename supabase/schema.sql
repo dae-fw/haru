@@ -42,6 +42,8 @@ create table if not exists public.haru_todos (
   waiting_on      text,
   -- "later today" snooze — hidden from Today until this time, status stays 'open'
   snooze_until    timestamptz,
+  -- checklist subtasks: [{id, title, done}]
+  subtasks        jsonb not null default '[]'::jsonb,
   -- provenance
   source          text not null default 'app' check (source in ('app', 'capture', 'google_tasks')),
   google_tasks_id text,

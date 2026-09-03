@@ -3,7 +3,7 @@
 import Portal from "@/components/Portal";
 import { useState, useTransition } from "react";
 import { updateTodo } from "@/app/(app)/actions";
-import type { Project, Todo } from "@/lib/types";
+import type { Project, Subtask, Todo } from "@/lib/types";
 
 export default function EditTodoSheet({
   todo,
@@ -19,7 +19,16 @@ export default function EditTodoSheet({
   const [due, setDue] = useState(todo.due_date ?? "");
   const [flagged, setFlagged] = useState(todo.flagged);
   const [notes, setNotes] = useState(todo.notes ?? "");
+  const [subs, setSubs] = useState<Subtask[]>(todo.subtasks ?? []);
+  const [newSub, setNewSub] = useState("");
   const [pending, start] = useTransition();
+
+  function addSub() {
+    const t = newSub.trim();
+    if (!t) return;
+    setSubs((s) => [...s, { id: crypto.randomUUID(), title: t, done: false }]);
+    setNewSub("");
+  }
 
   function save() {
     if (!title.trim() || pending) return;
@@ -30,6 +39,7 @@ export default function EditTodoSheet({
         due_date: due || null,
         flagged,
         notes,
+        subtasks: subs,
       });
       onClose();
     });
@@ -88,6 +98,56 @@ export default function EditTodoSheet({
           />
           Flag as high priority
         </label>
+
+        <label className="sec">
+          Subtasks{subs.length ? ` · ${subs.filter((s) => s.done).length}/${subs.length}` : ""}
+        </label>
+        <div className="subtask-edit">
+          {subs.map((s, i) => (
+            <div className="subtask-row" key={s.id}>
+              <button
+                type="button"
+                className={`subcheck${s.done ? " on" : ""}`}
+                aria-label={s.done ? "Mark not done" : "Mark done"}
+                onClick={() =>
+                  setSubs((arr) => arr.map((x) => (x.id === s.id ? { ...x, done: !x.done } : x)))
+                }
+              />
+              <input
+                value={s.title}
+                onChange={(e) =>
+                  setSubs((arr) =>
+                    arr.map((x) => (x.id === s.id ? { ...x, title: e.target.value } : x)),
+                  )
+                }
+                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: "0.88rem" }}
+              />
+              <button
+                type="button"
+                className="linkish"
+                aria-label="Remove subtask"
+                onClick={() => setSubs((arr) => arr.filter((_, j) => j !== i))}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          <div className="subtask-row">
+            <span className="subcheck ghost" aria-hidden />
+            <input
+              value={newSub}
+              onChange={(e) => setNewSub(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addSub();
+                }
+              }}
+              placeholder="Add a subtask"
+              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: "0.88rem" }}
+            />
+          </div>
+        </div>
 
         <label className="sec">Notes</label>
         <textarea

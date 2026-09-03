@@ -154,6 +154,7 @@ export async function updateTodo(
     due_date?: string | null;
     flagged?: boolean;
     notes?: string | null;
+    subtasks?: { id: string; title: string; done: boolean }[];
   },
 ) {
   const { supabase } = await requireUser();
@@ -165,9 +166,28 @@ export async function updateTodo(
   if (patch.project_id !== undefined) update.project_id = patch.project_id || null;
   if (patch.due_date !== undefined) update.due_date = patch.due_date || null;
   if (patch.flagged !== undefined) update.flagged = patch.flagged;
+  if (patch.subtasks !== undefined) {
+    update.subtasks = patch.subtasks
+      .filter((s) => s.title.trim())
+      .map((s) => ({ id: s.id, title: s.title.trim(), done: !!s.done }));
+  }
   if (patch.notes !== undefined) update.notes = patch.notes?.trim() || null;
   if (Object.keys(update).length === 0) return;
   await supabase.from("haru_todos").update(update).eq("id", id);
+  revalidateAll();
+}
+
+export async function toggleSubtask(todoId: string, subId: string) {
+  const { supabase } = await requireUser();
+  const { data } = await supabase
+    .from("haru_todos")
+    .select("subtasks")
+    .eq("id", todoId)
+    .single();
+  const subs = ((data?.subtasks ?? []) as { id: string; title: string; done: boolean }[]).map(
+    (s) => (s.id === subId ? { ...s, done: !s.done } : s),
+  );
+  await supabase.from("haru_todos").update({ subtasks: subs }).eq("id", todoId);
   revalidateAll();
 }
 

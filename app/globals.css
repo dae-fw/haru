@@ -564,6 +564,110 @@ button.title-edit {
   align-items: center;
   flex-wrap: wrap;
 }
+.all-filters {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: -2px -2px 0;
+  padding: 2px;
+}
+.all-filters::-webkit-scrollbar {
+  display: none;
+}
+.all-filter {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.all-filter.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.all-filter .fc {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  opacity: 0.85;
+}
+
+.chip.subs-chip {
+  cursor: pointer;
+  background: transparent;
+}
+.chip.subs-chip.on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.subs-list {
+  list-style: none;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.subs-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+.subs-list li.done span {
+  text-decoration: line-through;
+  color: var(--ink-soft);
+}
+.subcheck {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border: 1.5px solid var(--ink-soft);
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+}
+.subcheck.on {
+  background: var(--good);
+  border-color: var(--good);
+}
+.subcheck.on::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--surface);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.subcheck.ghost {
+  border-style: dashed;
+  cursor: default;
+}
+.subtask-edit {
+  margin-top: 6px;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.subtask-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
 .row .resched {
   margin-left: auto;
   font-family: var(--font-mono);
