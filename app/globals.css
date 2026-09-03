@@ -429,6 +429,47 @@ select {
   border: 1px solid var(--hair);
   border-radius: var(--radius);
   padding: 11px 13px;
+  position: relative;
+  overflow: hidden;
+}
+/* swipe: the content rides on .row-inner, action cues sit behind it */
+.row-inner {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  background: var(--surface);
+  position: relative;
+  z-index: 1;
+  touch-action: pan-y;
+}
+.swipe-cue {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 72px;
+  display: flex;
+  align-items: center;
+  font-size: 1.05rem;
+  z-index: 0;
+  opacity: 0.4;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.swipe-cue.left {
+  left: 0;
+  justify-content: flex-start;
+  padding-left: 20px;
+  color: var(--good, #2f9e44);
+}
+.swipe-cue.right {
+  right: 0;
+  justify-content: flex-end;
+  padding-right: 20px;
+  color: var(--accent);
+}
+.swipe-cue.armed {
+  opacity: 1;
+  transform: scale(1.3);
 }
 .row.past {
   opacity: 0.5;

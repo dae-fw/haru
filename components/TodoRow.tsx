@@ -46,6 +46,12 @@ export default function TodoRow({
   const checkRef = useRef<HTMLButtonElement>(null);
   const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // horizontal swipe: right = complete, left = reschedule / park
+  const [dx, setDx] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const dragFrom = useRef<number | null>(null);
+  const COMMIT = 72;
+
   const [optDone, setOptDone] = useOptimistic(todo.status === "done");
   // completed while offline, waiting to sync
   const [queuedDone, setQueuedDone] = useState(false);
@@ -86,8 +92,63 @@ export default function TodoRow({
     });
   }
 
+  const swipeEnabled = showTools && !done;
+
+  function onPointerDown(e: React.PointerEvent) {
+    if (!swipeEnabled || e.pointerType === "mouse") return;
+    dragFrom.current = e.clientX;
+    setSwiping(true);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    if (dragFrom.current == null) return;
+    const raw = e.clientX - dragFrom.current;
+    setDx(Math.max(-140, Math.min(140, raw)));
+  }
+  function endSwipe() {
+    if (dragFrom.current == null) return;
+    const settled = dx;
+    dragFrom.current = null;
+    setSwiping(false);
+    setDx(0);
+    if (settled >= COMMIT) {
+      if (!done) toggle();
+    } else if (settled <= -COMMIT) {
+      setSheet(true);
+    }
+  }
+
   return (
     <li className={`row${done ? " done" : ""}${playing ? " playing" : ""}`}>
+      {swipeEnabled && (
+        <>
+          <span className={`swipe-cue left${dx >= COMMIT ? " armed" : ""}`} aria-hidden>
+            ✓
+          </span>
+          <span className={`swipe-cue right${dx <= -COMMIT ? " armed" : ""}`} aria-hidden>
+            ↻
+          </span>
+        </>
+      )}
+      <div
+        className="row-inner"
+        style={
+          swipeEnabled
+            ? {
+                transform: dx ? `translateX(${dx}px)` : undefined,
+                transition: swiping ? "none" : "transform .2s ease",
+              }
+            : undefined
+        }
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endSwipe}
+        onPointerCancel={endSwipe}
+      >
       <button
         ref={checkRef}
         className="check"
@@ -162,6 +223,7 @@ export default function TodoRow({
             ))}
           </ul>
         )}
+      </div>
       </div>
 
       {sheet && <RescheduleSheet todo={todo} onClose={() => setSheet(false)} />}
