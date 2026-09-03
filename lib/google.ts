@@ -131,9 +131,9 @@ interface CalListEntry {
 }
 
 /** Today's events across every calendar in the account that's shown in Google Calendar. */
-/** Events across every visible calendar for one local day (dayOffset 0 = today, 1 = tomorrow). */
-const getEventsForOffset = cache(
-  async (tz: string = "UTC", dayOffset: number = 0): Promise<CalEvent[]> => {
+/** Events across every visible calendar between two local dates (inclusive, YYYY-MM-DD). */
+export const getEventsBetween = cache(
+  async (tz: string, startDate: string, endDate: string): Promise<CalEvent[]> => {
     if (!CONFIGURED) return [];
     const token = await accessToken();
     if (!token) return [];
@@ -153,19 +153,17 @@ const getEventsForOffset = cache(
       console.error("google calendarList failed", await listRes.text());
     }
 
-    // 2. the target day's window in the viewer's timezone
-    const anchor = new Date(Date.now() + dayOffset * 86400000);
-    const date = anchor.toLocaleDateString("en-CA", { timeZone: tz });
-    const off = tzOffset(tz, anchor);
-    const timeMin = encodeURIComponent(`${date}T00:00:00${off}`);
-    const timeMax = encodeURIComponent(`${date}T23:59:59${off}`);
+    // 2. the window in the viewer's timezone
+    const off = tzOffset(tz, new Date());
+    const timeMin = encodeURIComponent(`${startDate}T00:00:00${off}`);
+    const timeMax = encodeURIComponent(`${endDate}T23:59:59${off}`);
 
     // 3. fetch each calendar's events in parallel
     const perCal = await Promise.all(
       cals.map(async (c) => {
         const url = `${CAL_API}/calendars/${encodeURIComponent(
           c.id,
-        )}/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=50`;
+        )}/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=100`;
         const r = await fetch(url, { headers: auth });
         if (!r.ok) return [] as CalEvent[];
         const j = (await r.json()) as { items?: Parameters<typeof normalize>[0][] };
@@ -183,8 +181,17 @@ const getEventsForOffset = cache(
   },
 );
 
-export const getTodayEvents = (tz: string = "UTC") => getEventsForOffset(tz, 0);
-export const getTomorrowEvents = (tz: string = "UTC") => getEventsForOffset(tz, 1);
+const localDateInTz = (tz: string, dayOffset = 0) =>
+  new Date(Date.now() + dayOffset * 86400000).toLocaleDateString("en-CA", { timeZone: tz });
+
+export const getTodayEvents = (tz: string = "UTC") => {
+  const d = localDateInTz(tz, 0);
+  return getEventsBetween(tz, d, d);
+};
+export const getTomorrowEvents = (tz: string = "UTC") => {
+  const d = localDateInTz(tz, 1);
+  return getEventsBetween(tz, d, d);
+};
 
 /** For the Plan chat (step 3) and the Add-event sheet. */
 export async function createCalendarEvent(input: {

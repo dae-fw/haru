@@ -70,6 +70,45 @@ export async function addTodo(formData: FormData) {
   }
 }
 
+/** Plain-args todo create — used by the Plan chat's add_todo tool. */
+export async function addTodoFields(input: {
+  title: string;
+  dueDate?: string | null;
+  projectId?: string | null;
+  flagged?: boolean;
+}) {
+  const { user, supabase } = await requireUser();
+  const title = input.title.trim();
+  if (!title) return;
+  const due = input.dueDate || null;
+
+  const { data: inserted } = await supabase
+    .from("haru_todos")
+    .insert({
+      user_id: user.id,
+      title,
+      project_id: input.projectId || null,
+      due_date: due,
+      flagged: !!input.flagged,
+    })
+    .select("id")
+    .single();
+
+  revalidateAll();
+
+  if (inserted?.id) {
+    after(async () => {
+      const gid = await createGoogleTask({ title, dueDate: due });
+      if (gid) {
+        await supabase
+          .from("haru_todos")
+          .update({ google_tasks_id: gid })
+          .eq("id", inserted.id);
+      }
+    });
+  }
+}
+
 export async function completeTodo(id: string) {
   const { supabase } = await requireUser();
   const { data } = await supabase.from("haru_todos").select("*").eq("id", id).single();

@@ -5,13 +5,16 @@ import { getDoneToday, getIdeas, getOpenTodos, getProjects } from "@/lib/data";
 import {
   getTodayEvents,
   getTomorrowEvents,
+  getEventsBetween,
   isGoogleConnected,
   createCalendarEvent,
   moveCalendarEvent,
 } from "@/lib/google";
 import { getTimeZone } from "@/lib/tz.server";
+import { timeInTz } from "@/lib/tz";
 import { buildSystemPrompt, PLAN_MODEL, type PlanContext } from "@/lib/plan";
 import {
+  addTodoFields,
   completeTodo,
   rescheduleTodo,
 } from "@/app/(app)/actions";
@@ -68,9 +71,26 @@ export async function POST(req: Request) {
     doneToday,
     staleIdea,
     tomorrowEvents,
+    ideas,
   };
 
   const tools: Anthropic.Tool[] = [
+    {
+      name: "add_todo",
+      description:
+        "Create a new todo. Call once per task. due_date is YYYY-MM-DD (omit for no date).",
+      input_schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          title: { type: "string" },
+          due_date: { type: "string", description: "YYYY-MM-DD, optional" },
+          project: { type: "string", description: "exact project name from the prompt, optional" },
+          flagged: { type: "boolean", description: "high priority, optional" },
+        },
+        required: ["title"],
+      },
+    },
     {
       name: "complete_todo",
       description: "Mark a todo as done. Use the exact id from the system prompt.",
@@ -99,6 +119,21 @@ export async function POST(req: Request) {
   ];
   if (connected) {
     tools.push(
+      {
+        name: "get_events",
+        description:
+          "List calendar events between two dates (inclusive), YYYY-MM-DD. Use for availability questions about days other than today.",
+        input_schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            start_date: { type: "string", description: "YYYY-MM-DD" },
+            end_date: { type: "string", description: "YYYY-MM-DD" },
+          },
+          required: ["start_date", "end_date"],
+        },
+        strict: true,
+      },
       {
         name: "create_event",
         description:
@@ -168,7 +203,38 @@ export async function POST(req: Request) {
       let content = "ok";
       let isError = false;
       try {
-        if (block.name === "complete_todo") {
+        if (block.name === "add_todo") {
+          const title = String(input.title ?? "").trim();
+          if (!title) throw new Error("title required");
+          const dd = input.due_date ? String(input.due_date) : null;
+          if (dd && !ISO_DATE.test(dd)) throw new Error("due_date must be YYYY-MM-DD");
+          const pid = input.project
+            ? projects.find(
+                (p) => p.name.toLowerCase() === String(input.project).toLowerCase(),
+              )?.id ?? null
+            : null;
+          await addTodoFields({
+            title,
+            dueDate: dd,
+            projectId: pid,
+            flagged: String(input.flagged) === "true",
+          });
+          actions.push(`Added “${title}”${dd ? ` (due ${dd})` : ""}`);
+          mutated = true;
+        } else if (block.name === "get_events") {
+          if (!ISO_DATE.test(input.start_date) || !ISO_DATE.test(input.end_date)) {
+            throw new Error("dates must be YYYY-MM-DD");
+          }
+          const evs = await getEventsBetween(tz, input.start_date, input.end_date);
+          content = evs.length
+            ? evs
+                .map(
+                  (e) =>
+                    `${e.start.slice(0, 10)} ${e.allDay ? "all day" : timeInTz(e.start, tz)} — ${e.title}`,
+                )
+                .join("\n")
+            : "(no events in that range)";
+        } else if (block.name === "complete_todo") {
           await completeTodo(input.todo_id);
           const t = todos.find((x) => x.id === input.todo_id);
           actions.push(`Completed “${t?.title ?? "todo"}”`);

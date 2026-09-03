@@ -30,6 +30,8 @@ export interface PlanContext {
   doneToday?: Todo[];
   staleIdea?: Idea | null;
   tomorrowEvents?: CalEvent[];
+  /** Loose ideas from Capture — so the chat can answer "did I note anything about X". */
+  ideas?: Idea[];
 }
 
 /** Open todos that were due today or earlier and didn't get done — they "roll" to tomorrow. */
@@ -304,9 +306,11 @@ PRIORITY ORDER (use this exact order when suggesting what to do first):
 Present the ranked list only when asked or at the very start; after that, follow the user's lead.
 
 You can act by calling tools. Rules:
-- Only reschedule / complete / create / move when the user clearly asks or agrees.
+- add_todo: create a task when asked ("add a, b, c" → one call each). complete_todo / reschedule_todo act on existing ones.
+- get_events: look up calendar for any date range — use it for "am I free Thursday", "what's on next week".
+- create_event / move_event: only when the user clearly asks or agrees.
 - Never delete anything. There is no delete tool by design.
-- When you complete or reschedule, briefly confirm what you did.
+- After any change, briefly confirm what you did.
 - Dates are YYYY-MM-DD. Event times are full ISO 8601 with a timezone offset (use ${ctx.tz}).
 - If the user asks for something you have no tool for (e.g. deleting an event), tell them to do it in Google Calendar.
 
@@ -315,7 +319,10 @@ ${todoLines || "(none)"}
 
 TODAY'S CALENDAR EVENTS:
 ${eventLines}
-${ctx.googleConnected ? "" : "\n(Calendar is not connected — create_event / move_event are unavailable.)"}`;
+${ctx.googleConnected ? "For any other day, call get_events with a date range." : "\n(Calendar is not connected — create_event / move_event / get_events are unavailable.)"}
+
+LOOSE IDEAS (from Capture, not yet tasks):
+${(ctx.ideas ?? []).map((i) => `- "${i.body}"`).join("\n") || "(none)"}`;
 
   return role;
 }
