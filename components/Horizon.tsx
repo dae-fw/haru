@@ -1,25 +1,32 @@
 "use client";
 
 import { useState } from "react";
+import EventRow from "@/components/EventRow";
 import TodoRow from "@/components/TodoRow";
+import type { CalEvent } from "@/lib/google";
 import type { Project, Todo } from "@/lib/types";
 
 export default function Horizon({
   tomorrow,
+  tomorrowEvents = [],
   week,
   month,
   projects,
+  tz,
 }: {
   tomorrow: Todo[];
+  tomorrowEvents?: CalEvent[];
   week: Todo[];
   month: Todo[];
   projects: Project[];
+  tz: string;
 }) {
   const [open, setOpen] = useState(false);
   const [pop, setPop] = useState(false);
   const byId = new Map(projects.map((p) => [p.id, p]));
 
-  if (tomorrow.length === 0 && week.length === 0 && month.length === 0) return null;
+  const tmrCount = tomorrow.length + tomorrowEvents.length;
+  if (tmrCount === 0 && week.length === 0 && month.length === 0) return null;
 
   function toggle() {
     setOpen((o) => {
@@ -32,16 +39,16 @@ export default function Horizon({
   }
 
   const parts: string[] = [];
-  if (tomorrow.length) parts.push(`${tomorrow.length} tomorrow`);
+  if (tmrCount) parts.push(`${tmrCount} tomorrow`);
   if (week.length) parts.push(`${week.length} this week`);
   if (month.length) parts.push(`${month.length} later this month`);
 
-  const section = (label: string, list: Todo[]) =>
-    list.length > 0 && (
+  const list = (label: string, todos: Todo[]) =>
+    todos.length > 0 && (
       <>
         <div className="sub-h">{label}</div>
         <ul className="list">
-          {list.map((t) => (
+          {todos.map((t) => (
             <TodoRow
               key={t.id}
               todo={t}
@@ -66,9 +73,26 @@ export default function Horizon({
       <div className={`earlier-wrap${open ? " open" : ""}${pop ? " pop" : ""}`}>
         <div className="earlier-inner">
           <div className="earlier-body">
-            {section("Tomorrow", tomorrow)}
-            {section("This week", week)}
-            {section("Later this month", month)}
+            {tmrCount > 0 && (
+              <>
+                <div className="sub-h">Tomorrow</div>
+                <ul className="list">
+                  {tomorrowEvents.map((e) => (
+                    <EventRow key={e.id} event={e} tz={tz} />
+                  ))}
+                  {tomorrow.map((t) => (
+                    <TodoRow
+                      key={t.id}
+                      todo={t}
+                      projects={projects}
+                      project={t.project_id ? byId.get(t.project_id) : undefined}
+                    />
+                  ))}
+                </ul>
+              </>
+            )}
+            {list("This week", week)}
+            {list("Later this month", month)}
           </div>
         </div>
       </div>

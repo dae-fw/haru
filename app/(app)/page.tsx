@@ -6,7 +6,7 @@ import {
   isOnToday,
   isWaiting,
 } from "@/lib/data";
-import { getTodayEvents, isGoogleConnected } from "@/lib/google";
+import { getTodayEvents, getTomorrowEvents, isGoogleConnected } from "@/lib/google";
 import { hourInTz, todayInTz } from "@/lib/tz";
 import { getTimeZone } from "@/lib/tz.server";
 import { unparkTodo } from "@/app/(app)/actions";
@@ -80,11 +80,12 @@ function rank(t: Todo, today: string): number {
 export default async function TodayPage() {
   const { user } = await requireUser();
   const tz = await getTimeZone();
-  const [projects, open, doneToday, events, connected] = await Promise.all([
+  const [projects, open, doneToday, events, tomorrowEvents, connected] = await Promise.all([
     getProjects(),
     getOpenTodos(),
     getDoneToday(),
     getTodayEvents(tz),
+    getTomorrowEvents(tz),
     isGoogleConnected(),
   ]);
   const byId = new Map<string, Project>(projects.map((p) => [p.id, p]));
@@ -296,9 +297,11 @@ export default async function TodayPage() {
 
         <Horizon
           tomorrow={tomorrowAhead}
+          tomorrowEvents={tomorrowEvents}
           week={weekAhead}
           month={monthAhead}
           projects={projects}
+          tz={tz}
         />
 
         <PlanLink />
