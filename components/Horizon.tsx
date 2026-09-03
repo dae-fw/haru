@@ -5,10 +5,12 @@ import TodoRow from "@/components/TodoRow";
 import type { Project, Todo } from "@/lib/types";
 
 export default function Horizon({
+  tomorrow,
   week,
   month,
   projects,
 }: {
+  tomorrow: Todo[];
   week: Todo[];
   month: Todo[];
   projects: Project[];
@@ -17,7 +19,7 @@ export default function Horizon({
   const [pop, setPop] = useState(false);
   const byId = new Map(projects.map((p) => [p.id, p]));
 
-  if (week.length === 0 && month.length === 0) return null;
+  if (tomorrow.length === 0 && week.length === 0 && month.length === 0) return null;
 
   function toggle() {
     setOpen((o) => {
@@ -30,8 +32,26 @@ export default function Horizon({
   }
 
   const parts: string[] = [];
+  if (tomorrow.length) parts.push(`${tomorrow.length} tomorrow`);
   if (week.length) parts.push(`${week.length} this week`);
   if (month.length) parts.push(`${month.length} later this month`);
+
+  const section = (label: string, list: Todo[]) =>
+    list.length > 0 && (
+      <>
+        <div className="sub-h">{label}</div>
+        <ul className="list">
+          {list.map((t) => (
+            <TodoRow
+              key={t.id}
+              todo={t}
+              projects={projects}
+              project={t.project_id ? byId.get(t.project_id) : undefined}
+            />
+          ))}
+        </ul>
+      </>
+    );
 
   return (
     <div className="earlier-block">
@@ -46,36 +66,9 @@ export default function Horizon({
       <div className={`earlier-wrap${open ? " open" : ""}${pop ? " pop" : ""}`}>
         <div className="earlier-inner">
           <div className="earlier-body">
-            {week.length > 0 && (
-              <>
-                <div className="sub-h">This week</div>
-                <ul className="list">
-                  {week.map((t) => (
-                    <TodoRow
-                      key={t.id}
-                      todo={t}
-                      projects={projects}
-                      project={t.project_id ? byId.get(t.project_id) : undefined}
-                    />
-                  ))}
-                </ul>
-              </>
-            )}
-            {month.length > 0 && (
-              <>
-                <div className="sub-h">Later this month</div>
-                <ul className="list">
-                  {month.map((t) => (
-                    <TodoRow
-                      key={t.id}
-                      todo={t}
-                      projects={projects}
-                      project={t.project_id ? byId.get(t.project_id) : undefined}
-                    />
-                  ))}
-                </ul>
-              </>
-            )}
+            {section("Tomorrow", tomorrow)}
+            {section("This week", week)}
+            {section("Later this month", month)}
           </div>
         </div>
       </div>

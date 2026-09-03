@@ -104,6 +104,9 @@ export default async function TodayPage() {
 
   // "Coming up" horizon: dated todos beyond today that aren't already on the list.
   const onTodayIds = new Set(todayList.map((t) => t.id));
+  const tmrDate = new Date(today + "T00:00:00Z");
+  tmrDate.setUTCDate(tmrDate.getUTCDate() + 1);
+  const tomorrowISO = tmrDate.toISOString().slice(0, 10);
   const weekEnd = new Date(today + "T00:00:00Z");
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
   const weekEndISO = weekEnd.toISOString().slice(0, 10);
@@ -112,13 +115,21 @@ export default async function TodayPage() {
   const sortByDue = (a: Todo, b: Todo) =>
     (Number(b.flagged) - Number(a.flagged)) ||
     (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999");
+  const tomorrowAhead = open
+    .filter(
+      (t) =>
+        !onTodayIds.has(t.id) &&
+        t.status === "open" &&
+        t.due_date === tomorrowISO,
+    )
+    .sort(sortByDue);
   const weekAhead = open
     .filter(
       (t) =>
         !onTodayIds.has(t.id) &&
         t.status === "open" &&
         t.due_date != null &&
-        t.due_date > today &&
+        t.due_date > tomorrowISO &&
         t.due_date <= weekEndISO,
     )
     .sort(sortByDue);
@@ -283,7 +294,12 @@ export default async function TodayPage() {
           </div>
         )}
 
-        <Horizon week={weekAhead} month={monthAhead} projects={projects} />
+        <Horizon
+          tomorrow={tomorrowAhead}
+          week={weekAhead}
+          month={monthAhead}
+          projects={projects}
+        />
 
         <PlanLink />
       </div>
