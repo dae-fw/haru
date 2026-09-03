@@ -59,18 +59,27 @@ export default async function SettingsPage({
         <NotificationToggle />
 
         <div className="settings-block">
-          <div className="label">Google Calendar</div>
+          <div className="label">Google</div>
           {gConnected ? (
             <>
               <p style={{ marginBottom: 8 }}>
-                Connected. Today&apos;s events show on the Today screen.
+                Connected. Calendar events show on Today, and new Google Tasks import
+                automatically (completing one here marks it done in Google — never deleted).
               </p>
-              <ConfirmButton
-                action={disconnectGoogle}
-                label="Disconnect"
-                confirmLabel="Disconnect Calendar?"
-                className="btn"
-              />
+              <p style={{ marginBottom: 8, fontSize: "0.78rem", color: "var(--ink-soft)" }}>
+                If Tasks aren&apos;t syncing, reconnect once to grant the Tasks permission.
+              </p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <a className="btn" href="/connect/google">
+                  Reconnect
+                </a>
+                <ConfirmButton
+                  action={disconnectGoogle}
+                  label="Disconnect"
+                  confirmLabel="Disconnect Google?"
+                  className="btn"
+                />
+              </div>
             </>
           ) : (
             <>
@@ -79,10 +88,10 @@ export default async function SettingsPage({
                   ? "Connection failed — try again."
                   : sp.gcal === "norefresh"
                     ? "Google didn't return a refresh token. Remove Haru at myaccount.google.com/permissions, then reconnect."
-                    : "Pull your calendar into the day view and let Plan create / move events."}
+                    : "Calendar on Today, Google Tasks imported automatically, and Plan can create / move events."}
               </p>
               <a className="btn primary" href="/connect/google">
-                Connect Google Calendar
+                Connect Google
               </a>
             </>
           )}

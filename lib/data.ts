@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { syncGoogleTasks } from "@/lib/google";
 import { todayISO } from "@/lib/recurrence";
 import type { Idea, Project, Todo } from "@/lib/types";
 
@@ -17,6 +18,7 @@ export const getProjects = cache(async (): Promise<Project[]> => {
 });
 
 export const getOpenTodos = cache(async (): Promise<Todo[]> => {
+  await syncGoogleTasks(); // pull in any new Google Tasks before we read
   const supabase = await createClient();
   const { data } = await supabase
     .from("haru_todos")

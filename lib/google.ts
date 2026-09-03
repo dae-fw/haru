@@ -8,9 +8,12 @@ const CAL_BASE = `${CAL_API}/calendars/primary`; // create/update land on the pr
 export const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/calendar.events",
   "https://www.googleapis.com/auth/calendar.readonly",
+  "https://www.googleapis.com/auth/tasks",
   "openid",
   "email",
 ].join(" ");
+
+const TASKS_BASE = "https://tasks.googleapis.com/tasks/v1/lists/@default/tasks";
 
 export interface CalEvent {
   id: string;
@@ -230,3 +233,58 @@ export async function updateCalendarEvent(
 /** @deprecated use updateCalendarEvent */
 export const moveCalendarEvent = (id: string, input: { start: string; end: string }) =>
   updateCalendarEvent(id, input);
+
+// ---------- Google Tasks (two-way, per the build brief) ----------
+
+interface GTask {
+  id: string;
+  title?: string;
+  due?: string; // RFC3339, date at 00:00:00Z
+  status?: "needsAction" | "completed";
+}
+
+/** Import any new open Google Tasks as todos. Import only — never writes back here. */
+export const syncGoogleTasks = cache(async (): Promise<void> => {
+  if (!CONFIGURED) return;
+  const token = await accessToken();
+  if (!token) return;
+
+  const res = await fetch(
+    `${TASKS_BASE}?showCompleted=false&showHidden=false&maxResults=100`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (!res.ok) return; // 403 = the tasks scope hasn't been granted yet — just skip
+  const json = (await res.json()) as { items?: GTask[] };
+  const items = (json.items ?? []).filter((t) => t.title?.trim());
+  if (!items.length) return;
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("haru_todos")
+    .select("google_tasks_id")
+    .eq("source", "google_tasks")
+    .not("google_tasks_id", "is", null);
+  const have = new Set((existing ?? []).map((r) => r.google_tasks_id as string));
+
+  const toInsert = items
+    .filter((t) => !have.has(t.id))
+    .map((t) => ({
+      title: t.title!.trim(),
+      due_date: t.due ? t.due.slice(0, 10) : null,
+      status: "open" as const,
+      source: "google_tasks" as const,
+      google_tasks_id: t.id,
+    }));
+  if (toInsert.length) await supabase.from("haru_todos").insert(toInsert);
+});
+
+/** Mark the linked Google Task complete when its imported todo is completed here. Never deletes. */
+export async function completeGoogleTask(taskId: string): Promise<void> {
+  const token = await accessToken();
+  if (!token) return;
+  await fetch(`${TASKS_BASE}/${encodeURIComponent(taskId)}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "completed" }),
+  }).catch(() => {});
+}

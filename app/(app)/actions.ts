@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { nextDueDate, toISODate } from "@/lib/recurrence";
-import { createCalendarEvent, updateCalendarEvent } from "@/lib/google";
+import { completeGoogleTask, createCalendarEvent, updateCalendarEvent } from "@/lib/google";
 import type { Recurrence, Todo } from "@/lib/types";
 
 function revalidateAll() {
@@ -69,6 +69,12 @@ export async function completeTodo(id: string) {
       source: todo.source,
     });
   }
+
+  // Writeback: an imported Google Task gets marked complete in Google too (never deleted).
+  if (todo.source === "google_tasks" && todo.google_tasks_id) {
+    await completeGoogleTask(todo.google_tasks_id);
+  }
+
   revalidateAll();
 }
 
