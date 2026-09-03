@@ -1,7 +1,8 @@
 import { requireUser } from "@/lib/auth";
-import { getIdeas } from "@/lib/data";
+import { getIdeas, getProjects } from "@/lib/data";
 import { deleteIdea, promoteIdea } from "@/app/(app)/actions";
 import AddIdea from "@/components/AddIdea";
+import SnapNote from "@/components/SnapNote";
 import ConfirmButton from "@/components/ConfirmButton";
 import Gear from "@/components/Gear";
 
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CapturePage() {
   await requireUser();
-  const ideas = await getIdeas();
+  const [ideas, projects] = await Promise.all([getIdeas(), getProjects()]);
 
   return (
     <>
@@ -22,6 +23,7 @@ export default async function CapturePage() {
 
       <div className="body">
         <AddIdea />
+        <SnapNote projects={projects} />
 
         <div className="group">
           <h2>Not sorted yet <span className="count">{ideas.length}</span></h2>

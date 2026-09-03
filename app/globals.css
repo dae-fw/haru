@@ -564,6 +564,85 @@ button.title-edit {
   align-items: center;
   flex-wrap: wrap;
 }
+/* snap-a-note */
+.snap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.snap-btn {
+  align-self: flex-start;
+  border: 1px dashed var(--hair);
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 8px 15px;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+.snap-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.snap-btn:disabled {
+  opacity: 0.6;
+}
+.snap-err {
+  font-size: 0.8rem;
+  color: var(--crit);
+}
+.snap-card {
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.snap-card .label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+}
+.snap-card textarea {
+  width: 100%;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  padding: 9px 12px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+.snap-route {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+.snap-route select {
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: var(--surface);
+  font-size: 0.84rem;
+}
+.snap-hint {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.snap-actions {
+  display: flex;
+  gap: 8px;
+}
+.snap-actions .btn {
+  flex: 1;
+}
+
 .all-filters {
   display: flex;
   gap: 6px;
