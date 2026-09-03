@@ -2,7 +2,7 @@
 
 import Portal from "@/components/Portal";
 import { useState, useTransition } from "react";
-import { updateTodo } from "@/app/(app)/actions";
+import { demoteToIdea, updateTodo } from "@/app/(app)/actions";
 import type { Project, Subtask, Todo } from "@/lib/types";
 
 export default function EditTodoSheet({
@@ -17,6 +17,7 @@ export default function EditTodoSheet({
   const [title, setTitle] = useState(todo.title);
   const [projectId, setProjectId] = useState(todo.project_id ?? "");
   const [due, setDue] = useState(todo.due_date ?? "");
+  const [dueTime, setDueTime] = useState(todo.due_time ?? "");
   const [flagged, setFlagged] = useState(todo.flagged);
   const [notes, setNotes] = useState(todo.notes ?? "");
   const [subs, setSubs] = useState<Subtask[]>(todo.subtasks ?? []);
@@ -37,6 +38,7 @@ export default function EditTodoSheet({
         title,
         project_id: projectId || null,
         due_date: due || null,
+        due_time: due ? dueTime || null : null,
         flagged,
         notes,
         subtasks: subs,
@@ -84,11 +86,36 @@ export default function EditTodoSheet({
             onChange={(e) => setDue(e.target.value)}
           />
           {due && (
-            <button type="button" className="btn" onClick={() => setDue("")}>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                setDue("");
+                setDueTime("");
+              }}
+            >
               Clear
             </button>
           )}
         </div>
+        {due && (
+          <>
+            <label className="sec">Time (optional)</label>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+              <input
+                type="time"
+                style={{ ...field, marginTop: 0, flex: 1 }}
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+              />
+              {dueTime && (
+                <button type="button" className="btn" onClick={() => setDueTime("")}>
+                  Clear
+                </button>
+              )}
+            </div>
+          </>
+        )}
 
         <label className="sec" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
           <input
@@ -157,7 +184,21 @@ export default function EditTodoSheet({
           placeholder="Optional"
         />
 
-        <div className="sheet-actions">
+        <div className="sheet-actions" style={{ justifyContent: "space-between" }}>
+          <button
+            type="button"
+            className="linkish"
+            disabled={pending}
+            onClick={() =>
+              start(async () => {
+                await demoteToIdea(todo.id);
+                onClose();
+              })
+            }
+          >
+            → Move to Ideas
+          </button>
+          <div style={{ display: "flex", gap: 8 }}>
           <button type="button" className="btn" onClick={onClose}>
             Cancel
           </button>
@@ -169,6 +210,7 @@ export default function EditTodoSheet({
           >
             {pending ? "Saving…" : "Save"}
           </button>
+          </div>
         </div>
       </div>
     </div>

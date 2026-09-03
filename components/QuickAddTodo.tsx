@@ -39,6 +39,7 @@ export default function QuickAddTodo({
         type: "add",
         title,
         dueDate: due || undefined,
+        dueTime: due ? parsed.dueTime : undefined,
         projectId: parsed.projectId,
         flagged: parsed.flagged,
         recurrence: parsed.recurrence,
@@ -51,6 +52,7 @@ export default function QuickAddTodo({
     fd.set("title", title);
     fd.set("project_id", parsed.projectId ?? "");
     if (due) fd.set("due_date", due);
+    if (due && parsed.dueTime) fd.set("due_time", parsed.dueTime);
     if (parsed.flagged) fd.set("flagged", "on");
     if (parsed.recurrence) fd.set("recurrence", JSON.stringify(parsed.recurrence));
     start(async () => {

@@ -19,6 +19,7 @@ export async function addTodo(formData: FormData) {
 
   const projectId = String(formData.get("project_id") ?? "") || null;
   const due = String(formData.get("due_date") ?? "") || null;
+  const dueTime = String(formData.get("due_time") ?? "").trim() || null;
   const flagged = formData.get("flagged") === "on";
 
   let recurrence: unknown = null;
@@ -37,6 +38,7 @@ export async function addTodo(formData: FormData) {
     title,
     project_id: projectId,
     due_date: due,
+    due_time: due ? dueTime : null,
     flagged,
     recurrence,
   });
@@ -158,6 +160,7 @@ export async function updateTodo(
     title?: string;
     project_id?: string | null;
     due_date?: string | null;
+    due_time?: string | null;
     flagged?: boolean;
     notes?: string | null;
     subtasks?: { id: string; title: string; done: boolean }[];
@@ -170,7 +173,11 @@ export async function updateTodo(
     if (t) update.title = t;
   }
   if (patch.project_id !== undefined) update.project_id = patch.project_id || null;
-  if (patch.due_date !== undefined) update.due_date = patch.due_date || null;
+  if (patch.due_date !== undefined) {
+    update.due_date = patch.due_date || null;
+    if (!patch.due_date) update.due_time = null; // no date -> no time
+  }
+  if (patch.due_time !== undefined) update.due_time = patch.due_time || null;
   if (patch.flagged !== undefined) update.flagged = patch.flagged;
   if (patch.subtasks !== undefined) {
     update.subtasks = patch.subtasks
@@ -208,6 +215,25 @@ export async function addIdea(formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return;
   await supabase.from("haru_ideas").insert({ user_id: user.id, body });
+  revalidateAll();
+}
+
+/** Convert a todo back into a loose idea (removes the todo). */
+export async function demoteToIdea(todoId: string) {
+  const { user, supabase } = await requireUser();
+  const { data } = await supabase
+    .from("haru_todos")
+    .select("title, notes, project_id")
+    .eq("id", todoId)
+    .single();
+  if (!data) return;
+  const body = [data.title, data.notes].filter(Boolean).join(" — ");
+  await supabase.from("haru_ideas").insert({
+    user_id: user.id,
+    body,
+    project_id: data.project_id ?? null,
+  });
+  await supabase.from("haru_todos").delete().eq("id", todoId);
   revalidateAll();
 }
 

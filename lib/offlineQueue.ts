@@ -7,6 +7,7 @@ export type QueueOp =
       type: "add";
       title: string;
       dueDate?: string;
+      dueTime?: string;
       projectId?: string;
       flagged?: boolean;
       recurrence?: unknown;
@@ -19,6 +20,7 @@ export type QueueInput =
       type: "add";
       title: string;
       dueDate?: string;
+      dueTime?: string;
       projectId?: string;
       flagged?: boolean;
       recurrence?: unknown;

@@ -25,6 +25,7 @@ export default function OfflineSync() {
               fd.set("title", op.title);
               if (op.projectId) fd.set("project_id", op.projectId);
               if (op.dueDate) fd.set("due_date", op.dueDate);
+              if (op.dueDate && op.dueTime) fd.set("due_time", op.dueTime);
               if (op.flagged) fd.set("flagged", "on");
               if (op.recurrence) fd.set("recurrence", JSON.stringify(op.recurrence));
               await addTodo(fd);

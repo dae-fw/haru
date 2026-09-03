@@ -4,6 +4,7 @@ import type { Project, Recurrence } from "@/lib/types";
 export interface ParsedTodo {
   title: string;
   dueDate?: string; // yyyy-mm-dd (local)
+  dueTime?: string; // "HH:MM" 24h
   projectId?: string;
   flagged?: boolean;
   recurrence?: Recurrence;
@@ -117,12 +118,25 @@ export function parseTodoInput(raw: string, projects: Project[]): ParsedTodo {
     text = text.replace(rec.match, " ");
   }
 
+  // --- time of day ---
+  const time = extractTime(text);
+  if (time) {
+    out.dueTime = time.hhmm;
+    text = text.replace(time.match, " ");
+  }
+
   // --- date ---
   const date = extractDate(text);
   if (date) {
     out.dueDate = date.iso;
-    hints.push(`due ${labelFor(date.iso)}`);
+    hints.push(`due ${labelFor(date.iso)}${out.dueTime ? ` ${fmt12(out.dueTime)}` : ""}`);
     text = text.replace(date.match, " ");
+  }
+
+  // a time with no date means today
+  if (out.dueTime && !out.dueDate) {
+    out.dueDate = iso(addDays(0));
+    hints.push(`due today ${fmt12(out.dueTime)}`);
   }
 
   // a recurring task with no explicit date starts at its first occurrence
@@ -285,4 +299,43 @@ function extractDate(text: string): { iso: string; match: string } | null {
 
 function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function fmt12(hhmm: string): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  const am = h < 12;
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${am ? "AM" : "PM"}`;
+}
+
+/** "at 3pm", "3:30pm", "9 am", "15:00", "noon", "midnight". */
+function extractTime(text: string): { hhmm: string; match: string } | null {
+  const t = text.toLowerCase();
+
+  let m = t.match(/(^|\s)(?:at\s+)?noon(\s|$)/);
+  if (m) return { hhmm: "12:00", match: m[0] };
+  m = t.match(/(^|\s)(?:at\s+)?midnight(\s|$)/);
+  if (m) return { hhmm: "00:00", match: m[0] };
+
+  // 3pm / 3:30 pm / 3.30pm
+  m = t.match(/(^|\s)(?:at\s+|@\s*)?(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)(\s|$)/);
+  if (m) {
+    let h = Number(m[2]) % 12;
+    if (m[4] === "pm") h += 12;
+    const min = m[3] ? Number(m[3]) : 0;
+    if (h <= 23 && min <= 59) {
+      return { hhmm: `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`, match: m[0] };
+    }
+  }
+
+  // 24h: "at 15:00" / "@ 9:30" (require the "at"/"@" so we don't eat dates)
+  m = t.match(/(^|\s)(?:at\s+|@\s*)(\d{1,2}):(\d{2})(\s|$)/);
+  if (m) {
+    const h = Number(m[2]);
+    const min = Number(m[3]);
+    if (h <= 23 && min <= 59) {
+      return { hhmm: `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`, match: m[0] };
+    }
+  }
+  return null;
 }

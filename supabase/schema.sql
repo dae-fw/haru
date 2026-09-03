@@ -32,6 +32,7 @@ create table if not exists public.haru_todos (
   project_id      uuid references public.haru_projects (id) on delete set null,
   notes           text,
   due_date        date,
+  due_time        text,  -- "HH:MM" 24h, optional
   status          text not null default 'open' check (status in ('open', 'done', 'waiting')),
   flagged         boolean not null default false,
   -- recurrence: null, or { type: 'weekly'|'monthly'|'everyN', weekdays?: int[], dayOfMonth?: int, n?: int }

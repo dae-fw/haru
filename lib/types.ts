@@ -29,6 +29,7 @@ export interface Todo {
   project_id: string | null;
   notes: string | null;
   due_date: string | null; // yyyy-mm-dd
+  due_time: string | null; // "HH:MM" 24h
   status: TodoStatus;
   flagged: boolean;
   recurrence: Recurrence | null;

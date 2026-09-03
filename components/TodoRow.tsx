@@ -5,6 +5,7 @@ import { completeTodo, reopenTodo, toggleSubtask } from "@/app/(app)/actions";
 import { burstFrom } from "@/lib/confetti";
 import { enqueue, offlineCompletedIds, onQueueChange } from "@/lib/offlineQueue";
 import { describeRecurrence, todayISO } from "@/lib/recurrence";
+import { fmt12 } from "@/lib/nlp";
 import type { Project, Todo } from "@/lib/types";
 import RescheduleSheet from "@/components/RescheduleSheet";
 import EditTodoSheet from "@/components/EditTodoSheet";
@@ -107,6 +108,7 @@ export default function TodoRow({
           {overdue && <span className="chip overdue">overdue</span>}
           {dueToday && <span className="chip today">due today</span>}
           {laterLabel && <span className="chip">{laterLabel}</span>}
+          {!done && todo.due_time && <span className="chip">{fmt12(todo.due_time)}</span>}
           {todo.flagged && <span className="chip flag">★ flagged</span>}
           {todo.recurrence && (
             <span className="chip">↻ {describeRecurrence(todo.recurrence)}</span>
