@@ -94,11 +94,31 @@ export function goodnightMessage(ctx: PlanContext): string {
   return parts.join("\n\n");
 }
 
+/** Project ids that have a calendar event today — matched by the project name
+ *  showing up in an event title. Pure in-memory over data we already have. */
+export function projectsWithEventToday(
+  events: CalEvent[],
+  projects: Project[],
+): Set<string> {
+  const out = new Set<string>();
+  for (const p of projects) {
+    const name = p.name.trim().toLowerCase();
+    if (name.length < 3) continue; // too short to match safely
+    if (events.some((e) => e.title?.toLowerCase().includes(name))) out.add(p.id);
+  }
+  return out;
+}
+
 /** Explicit priority order (from the build brief — not left to the model to guess). */
-export function rankToday(todos: Todo[], today: string) {
+export function rankToday(
+  todos: Todo[],
+  today: string,
+  eventProjectIds: Set<string> = new Set(),
+) {
   const score = (t: Todo): number => {
     if (t.due_date && t.due_date < today) return 0; // overdue
     if (t.due_date === today) return 1; // due today
+    if (t.project_id && eventProjectIds.has(t.project_id)) return 2; // project has an event today
     if (t.flagged) return 3; // manually flagged
     return 4;
   };
@@ -120,7 +140,8 @@ function dayPart(tz: string): string {
 export function openingMessage(ctx: PlanContext): string {
   if (ctx.mode === "night") return goodnightMessage(ctx);
   const today = todayInTz(ctx.tz);
-  const ranked = rankToday(ctx.todos, today);
+  const eventProjectIds = projectsWithEventToday(ctx.events, ctx.projects);
+  const ranked = rankToday(ctx.todos, today, eventProjectIds);
   const pname = (id: string | null) =>
     id ? (ctx.projects.find((p) => p.id === id)?.name ?? "—") : "no project";
 
@@ -135,9 +156,11 @@ export function openingMessage(ctx: PlanContext): string {
         ? "overdue"
         : t.due_date === today
           ? "due today"
-          : t.flagged
-            ? "flagged"
-            : "";
+          : t.project_id && eventProjectIds.has(t.project_id)
+            ? "meeting today"
+            : t.flagged
+              ? "flagged"
+              : "";
     lines.push(`${i + 1}. ${t.title} — ${pname(t.project_id)}${tag ? ` (${tag})` : ""}`);
   });
 

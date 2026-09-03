@@ -8,6 +8,7 @@ import {
 } from "@/lib/data";
 import { getTodayEvents, getTomorrowEvents, isGoogleConnected } from "@/lib/google";
 import { hourInTz, todayInTz } from "@/lib/tz";
+import { projectsWithEventToday } from "@/lib/plan";
 import { getTimeZone } from "@/lib/tz.server";
 import { unparkTodo } from "@/app/(app)/actions";
 import TodoRow from "@/components/TodoRow";
@@ -70,10 +71,11 @@ function displayName(meta?: string, email?: string | null): string {
   return local.charAt(0).toUpperCase() + local.slice(1);
 }
 
-function rank(t: Todo, today: string): number {
+function rank(t: Todo, today: string, eventProjects?: Set<string>): number {
   if (t.due_date && t.due_date < today) return 0;
   if (t.due_date === today) return 1;
-  return 2;
+  if (t.project_id && eventProjects?.has(t.project_id)) return 2; // project has an event today
+  return 3;
 }
 
 
@@ -91,17 +93,28 @@ export default async function TodayPage() {
   const byId = new Map<string, Project>(projects.map((p) => [p.id, p]));
   const today = todayInTz(tz);
   const now = Date.now();
+  const nowISO = new Date().toISOString();
+
+  // Brief priority rule #3: a task whose project has a calendar event today.
+  const eventProjects = projectsWithEventToday(events, projects);
 
   const todayList = open
-    .filter((t) => isOnToday(t, today))
+    .filter(
+      (t) =>
+        isOnToday(t, today) ||
+        (t.status === "open" &&
+          !!t.project_id &&
+          eventProjects.has(t.project_id) &&
+          !(t.snooze_until && t.snooze_until > nowISO)),
+    )
     .sort(
       (a, b) =>
-        rank(a, today) - rank(b, today) ||
+        rank(a, today, eventProjects) - rank(b, today, eventProjects) ||
         (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"),
     );
   const waitingList = open.filter(isWaiting);
-  const overdue = todayList.filter((t) => rank(t, today) === 0);
-  const rest = todayList.filter((t) => rank(t, today) !== 0);
+  const overdue = todayList.filter((t) => rank(t, today, eventProjects) === 0);
+  const rest = todayList.filter((t) => rank(t, today, eventProjects) !== 0);
 
   // "Coming up" horizon: dated todos beyond today that aren't already on the list.
   const onTodayIds = new Set(todayList.map((t) => t.id));
@@ -242,6 +255,9 @@ export default async function TodayPage() {
                 todo={t}
                 projects={projects}
                 project={t.project_id ? byId.get(t.project_id) : undefined}
+                hint={
+                  rank(t, today, eventProjects) === 2 ? "meeting today" : undefined
+                }
               />
             ))}
           </ul>

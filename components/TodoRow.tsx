@@ -30,11 +30,13 @@ export default function TodoRow({
   project,
   projects = [],
   showTools = true,
+  hint,
 }: {
   todo: Todo;
   project?: Project;
   projects?: Project[];
   showTools?: boolean;
+  hint?: string;
 }) {
   const [, start] = useTransition();
   const [sheet, setSheet] = useState(false);
@@ -107,6 +109,9 @@ export default function TodoRow({
         <div className="meta">
           {overdue && <span className="chip overdue">overdue</span>}
           {dueToday && <span className="chip today">due today</span>}
+          {!done && hint && !overdue && !dueToday && (
+            <span className="chip">{hint}</span>
+          )}
           {laterLabel && <span className="chip">{laterLabel}</span>}
           {!done && todo.due_time && <span className="chip">{fmt12(todo.due_time)}</span>}
           {todo.flagged && <span className="chip flag">★ flagged</span>}
