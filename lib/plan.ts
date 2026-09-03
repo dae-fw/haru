@@ -199,8 +199,18 @@ export function openingMessage(ctx: PlanContext): string {
 
   const part = dayPart(ctx.tz);
   const hi = part === "morning" ? "Good morning." : part === "afternoon" ? "Good afternoon." : "Evening.";
-  const calList = ctx.events
-    .map((e) => `${e.allDay ? "all day" : timeInTz(e.start, ctx.tz)} ${e.title}`)
+
+  // Calendar: drop events that ended 2h+ ago; mark ones just past as done.
+  const now = Date.now();
+  const shownEvents = ctx.events.filter(
+    (e) => e.allDay || new Date(e.end).getTime() >= now - 2 * 3600_000,
+  );
+  const calList = shownEvents
+    .map((e) => {
+      if (e.allDay) return `all day ${e.title}`;
+      const past = new Date(e.end).getTime() < now;
+      return `${timeInTz(e.start, ctx.tz)} ${e.title}${past ? " (done)" : ""}`;
+    })
     .join(", ");
 
   const parts: string[] = [];
@@ -215,14 +225,14 @@ export function openingMessage(ctx: PlanContext): string {
       return `· ${t.title}${atTime(t)}${proj}${tagFor(t, today, eventProjectIds)}`;
     });
     parts.push(`${hi} A few things want attention:\n${lines.join("\n")}`);
-  } else if (ctx.events.length) {
+  } else if (shownEvents.length) {
     parts.push(`${hi} Nothing pressing on the list — but the calendar has ${calList}.`);
   } else {
     parts.push(`${hi} Nothing on the list and the calendar's clear. An easy one.`);
   }
 
   // 2. calendar as its own line only when there were tasks above
-  if (ranked.length && ctx.events.length) {
+  if (ranked.length && shownEvents.length) {
     parts.push(`Calendar: ${calList}.`);
   }
 
