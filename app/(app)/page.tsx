@@ -321,6 +321,9 @@ export default async function TodayPage() {
         />
 
         <PlanLink />
+        <a href="/review" className="linkish" style={{ display: "block", marginTop: 10, textAlign: "center" }}>
+          Week in review →
+        </a>
       </div>
     </>
   );

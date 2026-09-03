@@ -41,6 +41,18 @@ export const getDoneToday = cache(async (): Promise<Todo[]> => {
   return (data as Todo[]) ?? [];
 });
 
+/** Todos completed on or after `startISO` (a timestamp). For the weekly review. */
+export const getDoneSince = cache(async (startISO: string): Promise<Todo[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("haru_todos")
+    .select("*")
+    .eq("status", "done")
+    .gte("completed_at", startISO)
+    .order("completed_at", { ascending: false });
+  return (data as Todo[]) ?? [];
+});
+
 export const getIdeas = cache(async (): Promise<Idea[]> => {
   const supabase = await createClient();
   const { data } = await supabase
