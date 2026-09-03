@@ -122,16 +122,18 @@ export default async function SettingsPage({
         <div className="settings-block">
           <div className="label">Daily check-ins</div>
           <p>
-            Morning nudge and Goodnight recap will land here once notifications are wired
-            (build step 6). For now, open <b>Plan</b> when you want to think through the day.
+            A morning nudge (top of your day) and a Goodnight recap (what got done, what&apos;s
+            on for tomorrow) arrive as push notifications once you turn them on above.
+            You can always open <b>Plan</b> to think a day through.
           </p>
         </div>
 
         <div className="settings-block">
           <div className="label">AI model</div>
           <p>
-            Haiku 4.5 for everything — parsing, tagging, summaries, and the planning chat.
-            The planning chat can move to Sonnet later if it needs deeper reasoning.
+            Haiku 4.5 powers the planning chat and reading a photo in Capture. Quick-add
+            parsing, the daily nudges and the recap are plain on-device logic — no model,
+            no cost. The chat can move to Sonnet later if it ever needs deeper reasoning.
           </p>
         </div>
 
