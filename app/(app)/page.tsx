@@ -15,6 +15,7 @@ import EventRow from "@/components/EventRow";
 import QuickAddTodo from "@/components/QuickAddTodo";
 import QueuedTasks from "@/components/QueuedTasks";
 import EarlierToday from "@/components/EarlierToday";
+import Horizon from "@/components/Horizon";
 import AddEventButton from "@/components/AddEventButton";
 import PlanLink from "@/components/PlanLink";
 import Gear from "@/components/Gear";
@@ -100,6 +101,37 @@ export default async function TodayPage() {
   const waitingList = open.filter(isWaiting);
   const overdue = todayList.filter((t) => rank(t, today) === 0);
   const rest = todayList.filter((t) => rank(t, today) !== 0);
+
+  // "Coming up" horizon: dated todos beyond today that aren't already on the list.
+  const onTodayIds = new Set(todayList.map((t) => t.id));
+  const weekEnd = new Date(today + "T00:00:00Z");
+  weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+  const weekEndISO = weekEnd.toISOString().slice(0, 10);
+  const [yr, mo] = today.split("-").map(Number);
+  const monthEndISO = new Date(Date.UTC(yr, mo, 0)).toISOString().slice(0, 10);
+  const sortByDue = (a: Todo, b: Todo) =>
+    (Number(b.flagged) - Number(a.flagged)) ||
+    (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999");
+  const weekAhead = open
+    .filter(
+      (t) =>
+        !onTodayIds.has(t.id) &&
+        t.status === "open" &&
+        t.due_date != null &&
+        t.due_date > today &&
+        t.due_date <= weekEndISO,
+    )
+    .sort(sortByDue);
+  const monthAhead = open
+    .filter(
+      (t) =>
+        !onTodayIds.has(t.id) &&
+        t.status === "open" &&
+        t.due_date != null &&
+        t.due_date > weekEndISO &&
+        t.due_date <= monthEndISO,
+    )
+    .sort(sortByDue);
 
   const pastEvents = events
     .filter((e) => !e.allDay && new Date(e.end).getTime() < now)
@@ -250,6 +282,8 @@ export default async function TodayPage() {
             <div>Add a todo in All, or jot something in Capture.</div>
           </div>
         )}
+
+        <Horizon week={weekAhead} month={monthAhead} projects={projects} />
 
         <PlanLink />
       </div>
