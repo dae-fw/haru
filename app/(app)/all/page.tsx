@@ -5,6 +5,7 @@ import { unparkTodo } from "@/app/(app)/actions";
 import QuickAddTodo from "@/components/QuickAddTodo";
 import TodoRow from "@/components/TodoRow";
 import AllFilters from "@/components/AllFilters";
+import DoneToday from "@/components/DoneToday";
 import Gear from "@/components/Gear";
 import type { Project, Todo } from "@/lib/types";
 
@@ -143,23 +144,8 @@ export default async function AllPage({
           </div>
         )}
 
-        {filter === "all" && doneToday.length > 0 && (
-          <div className="group">
-            <h2>
-              Done today <span className="count">{doneToday.length}</span>
-            </h2>
-            <ul className="list">
-              {doneToday.map((t) => (
-                <TodoRow
-                  key={t.id}
-                  todo={t}
-                  projects={projects}
-                  showTools={false}
-                  project={t.project_id ? byId.get(t.project_id) : undefined}
-                />
-              ))}
-            </ul>
-          </div>
+        {filter === "all" && (
+          <DoneToday done={doneToday} projects={projects} />
         )}
       </div>
     </>
