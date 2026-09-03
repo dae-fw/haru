@@ -5,6 +5,7 @@ import { addProject, disconnectGoogle, setNickname } from "@/app/(app)/actions";
 import ThemeControls from "@/components/ThemeControls";
 import ConfirmButton from "@/components/ConfirmButton";
 import NotificationToggle from "@/components/NotificationToggle";
+import ProjectRow from "@/components/ProjectRow";
 import { VERSION_LABEL } from "@/lib/version";
 
 export const dynamic = "force-dynamic";
@@ -101,15 +102,7 @@ export default async function SettingsPage({
           <div className="label">Projects</div>
           <ul className="list" style={{ marginBottom: 12 }}>
             {projects.map((p) => (
-              <li key={p.id} className="row">
-                <span
-                  className="dot"
-                  style={{ background: p.color, width: 12, height: 12, marginTop: 4 }}
-                />
-                <div className="main">
-                  <div className="title">{p.name}</div>
-                </div>
-              </li>
+              <ProjectRow key={p.id} project={p} />
             ))}
             {projects.length === 0 && (
               <li className="empty" style={{ padding: 12 }}>

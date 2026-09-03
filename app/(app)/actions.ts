@@ -332,3 +332,27 @@ export async function addProject(formData: FormData) {
   revalidatePath("/settings");
   revalidateAll();
 }
+
+export async function updateProject(id: string, patch: { name?: string; color?: string }) {
+  const { supabase } = await requireUser();
+  const update: Record<string, unknown> = {};
+  if (patch.name !== undefined) {
+    const n = patch.name.trim();
+    if (n) update.name = n;
+  }
+  if (patch.color !== undefined && /^#[0-9a-fA-F]{6}$/.test(patch.color)) {
+    update.color = patch.color;
+  }
+  if (Object.keys(update).length === 0) return;
+  await supabase.from("haru_projects").update(update).eq("id", id);
+  revalidatePath("/settings");
+  revalidateAll();
+}
+
+/** Removes the project. Its todos stay — they just lose the project tag (FK is ON DELETE SET NULL). */
+export async function deleteProject(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("haru_projects").delete().eq("id", id);
+  revalidatePath("/settings");
+  revalidateAll();
+}
