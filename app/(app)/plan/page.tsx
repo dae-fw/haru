@@ -44,10 +44,10 @@ export default async function PlanPage() {
   return (
     <>
       <header className="screen-head">
-        <div className="eyebrow">Plan · Haiku 4.5</div>
-        <h1>{evening ? "Wind down together" : "Plan the day together"}</h1>
+        <div className="eyebrow">Chat · Haiku 4.5</div>
+        <h1>{evening ? "Wind down together" : "What's the plan?"}</h1>
         <div className="sub">
-          Your todos{connected ? ", calendar" : ""}, what&apos;s done, and what&apos;s on for tomorrow
+          Knows your todos{connected ? ", calendar" : ""}, ideas and reference notes
         </div>
         <Gear />
       </header>

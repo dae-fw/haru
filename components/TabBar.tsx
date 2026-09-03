@@ -16,7 +16,7 @@ const ICONS: Record<string, React.ReactNode> = {
 const tabs = [
   { href: "/", label: "Today" },
   { href: "/all", label: "All" },
-  { href: "/plan", label: "Plan" },
+  { href: "/plan", label: "Chat" },
   { href: "/capture", label: "Capture" },
 ];
 

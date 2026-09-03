@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { getDoneToday, getIdeas, getOpenTodos, getProjects } from "@/lib/data";
+import { getDoneToday, getIdeas, getOpenTodos, getProjects, getReference } from "@/lib/data";
 import {
   getTodayEvents,
   getTomorrowEvents,
@@ -17,6 +17,7 @@ import {
   addTodoFields,
   completeTodo,
   rescheduleTodo,
+  saveReferenceFields,
 } from "@/app/(app)/actions";
 
 const MAX_STEPS = 6;
@@ -46,12 +47,13 @@ export async function POST(req: Request) {
   }
 
   const tz = await getTimeZone();
-  const [projects, todos, connected, ideas, doneToday] = await Promise.all([
+  const [projects, todos, connected, ideas, doneToday, reference] = await Promise.all([
     getProjects(),
     getOpenTodos(),
     isGoogleConnected(),
     getIdeas(),
     getDoneToday(),
+    getReference(),
   ]);
   const [events, tomorrowEvents] = await Promise.all([
     connected ? getTodayEvents(tz) : Promise.resolve([]),
@@ -72,6 +74,7 @@ export async function POST(req: Request) {
     staleIdea,
     tomorrowEvents,
     ideas,
+    reference: reference.map((r) => ({ label: r.label, body: r.body })),
   };
 
   const tools: Anthropic.Tool[] = [
@@ -89,6 +92,20 @@ export async function POST(req: Request) {
           flagged: { type: "boolean", description: "high priority, optional" },
         },
         required: ["title"],
+      },
+    },
+    {
+      name: "save_reference",
+      description:
+        "Store a durable fact the user asks you to remember (rent dates, account details, etc.). Not for tasks.",
+      input_schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          label: { type: "string", description: "short title, optional" },
+          body: { type: "string", description: "the fact" },
+        },
+        required: ["body"],
       },
     },
     {
@@ -220,6 +237,15 @@ export async function POST(req: Request) {
             flagged: String(input.flagged) === "true",
           });
           actions.push(`Added “${title}”${dd ? ` (due ${dd})` : ""}`);
+          mutated = true;
+        } else if (block.name === "save_reference") {
+          const factBody = String(input.body ?? "").trim();
+          if (!factBody) throw new Error("body required");
+          await saveReferenceFields({
+            label: input.label ? String(input.label) : null,
+            body: factBody,
+          });
+          actions.push(`Saved to reference${input.label ? `: ${input.label}` : ""}`);
           mutated = true;
         } else if (block.name === "get_events") {
           if (!ISO_DATE.test(input.start_date) || !ISO_DATE.test(input.end_date)) {

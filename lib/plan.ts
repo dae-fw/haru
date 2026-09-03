@@ -32,6 +32,8 @@ export interface PlanContext {
   tomorrowEvents?: CalEvent[];
   /** Loose ideas from Capture — so the chat can answer "did I note anything about X". */
   ideas?: Idea[];
+  /** Permanent reference facts (rent dates, account details, …). */
+  reference?: { label: string | null; body: string }[];
 }
 
 /** Open todos that were due today or earlier and didn't get done — they "roll" to tomorrow. */
@@ -322,7 +324,15 @@ ${eventLines}
 ${ctx.googleConnected ? "For any other day, call get_events with a date range." : "\n(Calendar is not connected — create_event / move_event / get_events are unavailable.)"}
 
 LOOSE IDEAS (from Capture, not yet tasks):
-${(ctx.ideas ?? []).map((i) => `- "${i.body}"`).join("\n") || "(none)"}`;
+${(ctx.ideas ?? []).map((i) => `- "${i.body}"`).join("\n") || "(none)"}
+
+REFERENCE FACTS (things the user has told you to remember — treat as reliable):
+${
+  (ctx.reference ?? [])
+    .map((r) => `- ${r.label ? `${r.label}: ` : ""}${r.body}`)
+    .join("\n") || "(none)"
+}
+Use save_reference when the user gives you a durable fact to remember.`;
 
   return role;
 }

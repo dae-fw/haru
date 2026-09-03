@@ -935,6 +935,15 @@ button.title-edit {
 }
 .idea .i-body {
   font-size: 0.9rem;
+  white-space: pre-wrap;
+}
+.idea .i-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  margin-bottom: 3px;
 }
 .idea .i-meta {
   margin-top: 8px;

@@ -51,3 +51,11 @@ export interface Idea {
   theme: string | null;
   created_at: string;
 }
+
+export interface Reference {
+  id: string;
+  user_id: string;
+  label: string | null;
+  body: string;
+  updated_at: string;
+}
