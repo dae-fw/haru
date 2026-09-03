@@ -2,7 +2,7 @@
 
 import Portal from "@/components/Portal";
 import { useState, useTransition } from "react";
-import { demoteToIdea, updateTodo } from "@/app/(app)/actions";
+import { deleteTodo, demoteToIdea, updateTodo } from "@/app/(app)/actions";
 import type { Project, Subtask, Todo } from "@/lib/types";
 
 export default function EditTodoSheet({
@@ -22,6 +22,7 @@ export default function EditTodoSheet({
   const [notes, setNotes] = useState(todo.notes ?? "");
   const [subs, setSubs] = useState<Subtask[]>(todo.subtasks ?? []);
   const [newSub, setNewSub] = useState("");
+  const [confirmDel, setConfirmDel] = useState(false);
   const [pending, start] = useTransition();
 
   function addSub() {
@@ -184,7 +185,7 @@ export default function EditTodoSheet({
           placeholder="Optional"
         />
 
-        <div className="sheet-actions" style={{ justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: 14, marginTop: 16 }}>
           <button
             type="button"
             className="linkish"
@@ -198,7 +199,34 @@ export default function EditTodoSheet({
           >
             → Move to Ideas
           </button>
-          <div style={{ display: "flex", gap: 8 }}>
+          {confirmDel ? (
+            <button
+              type="button"
+              className="linkish"
+              style={{ color: "var(--bad, #c0392b)" }}
+              disabled={pending}
+              onClick={() =>
+                start(async () => {
+                  await deleteTodo(todo.id);
+                  onClose();
+                })
+              }
+            >
+              Delete — sure?
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="linkish"
+              onClick={() => setConfirmDel(true)}
+            >
+              Delete task
+            </button>
+          )}
+        </div>
+
+        <div className="sheet-actions">
+          <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
           <button type="button" className="btn" onClick={onClose}>
             Cancel
           </button>

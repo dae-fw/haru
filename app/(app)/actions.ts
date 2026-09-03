@@ -237,6 +237,12 @@ export async function demoteToIdea(todoId: string) {
   revalidateAll();
 }
 
+export async function deleteTodo(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("haru_todos").delete().eq("id", id);
+  revalidateAll();
+}
+
 export async function promoteIdea(id: string) {
   const { user, supabase } = await requireUser();
   const { data: idea } = await supabase
