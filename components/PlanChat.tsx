@@ -22,14 +22,12 @@ export default function PlanChat({
   ]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // reset when the mode (opening) changes
   useEffect(() => {
     setTurns([{ role: "assistant", content: opening }]);
     setDraft("");
-    setChatOpen(false);
   }, [opening]);
 
   useEffect(() => {
@@ -71,10 +69,7 @@ export default function PlanChat({
   function clearChat() {
     setTurns([{ role: "assistant", content: opening }]);
     setDraft("");
-    setChatOpen(false);
   }
-
-  const conversing = chatOpen || turns.length > 1;
 
   return (
     <>
@@ -114,34 +109,27 @@ export default function PlanChat({
         {busy && <div className="typing">Haru is thinking…</div>}
       </div>
 
-      {conversing ? (
-        <form
-          className="plan-composer"
-          onSubmit={(e) => {
-            e.preventDefault();
-            send(draft);
-          }}
-        >
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder={
-              mode === "night"
-                ? "Move or note anything before bed?"
-                : "What would you like to focus on?"
-            }
-            disabled={busy}
-            autoFocus
-          />
-          <button type="submit" aria-label="Send" disabled={busy || !draft.trim()}>
-            ↑
-          </button>
-        </form>
-      ) : (
-        <button className="plan-talk" onClick={() => setChatOpen(true)}>
-          Talk it through ↗
+      <form
+        className="plan-composer"
+        onSubmit={(e) => {
+          e.preventDefault();
+          send(draft);
+        }}
+      >
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={
+            mode === "night"
+              ? "Move or note anything before bed?"
+              : "What would you like to focus on?"
+          }
+          disabled={busy}
+        />
+        <button type="submit" aria-label="Send" disabled={busy || !draft.trim()}>
+          ↑
         </button>
-      )}
+      </form>
     </>
   );
 }

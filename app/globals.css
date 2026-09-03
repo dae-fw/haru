@@ -1027,22 +1027,6 @@ button.title-edit {
   gap: 10px;
   padding-right: 2px;
 }
-.plan-talk {
-  flex: none;
-  margin-top: 12px;
-  align-self: flex-start;
-  border: 1px solid var(--hair);
-  border-radius: 999px;
-  padding: 9px 16px;
-  background: var(--surface);
-  color: var(--ink-soft);
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-.plan-talk:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}
 .plan-composer {
   flex: none;
   margin-top: 12px;
