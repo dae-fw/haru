@@ -644,12 +644,14 @@ button.title-edit {
 }
 
 .all-filters {
+  flex: none;
   display: flex;
   gap: 6px;
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
-  margin: -2px -2px 0;
-  padding: 2px;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
 }
 .all-filters::-webkit-scrollbar {
   display: none;
