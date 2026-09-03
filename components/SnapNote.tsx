@@ -1,12 +1,14 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { addIdea, addTodo } from "@/app/(app)/actions";
+import { addIdea, addTodo, saveReferenceFields } from "@/app/(app)/actions";
 import type { Project } from "@/lib/types";
+
+type Kind = "todo" | "idea" | "reference";
 
 interface Read {
   text: string;
-  kind: "todo" | "idea";
+  kind: Kind;
   projectId: string | null;
   projectName: string | null;
 }
@@ -36,7 +38,8 @@ async function downscale(file: File): Promise<{ data: string; mediaType: string 
 }
 
 export default function SnapNote({ projects }: { projects: Project[] }) {
-  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const libraryRef = useRef<HTMLInputElement>(null);
   const [reading, setReading] = useState(false);
   const [read, setRead] = useState<Read | null>(null);
   const [text, setText] = useState("");
@@ -63,7 +66,9 @@ export default function SnapNote({ projects }: { projects: Project[] }) {
         setErr(
           j.error === "not_configured"
             ? "Reading notes needs the AI key set up."
-            : "Couldn't read that image. Try again or type it in.",
+            : j.error === "empty"
+              ? "Couldn't make out any text — try a straight-on, well-lit shot."
+              : "Couldn't read that image. Try again or type it in.",
         );
         return;
       }
@@ -78,7 +83,7 @@ export default function SnapNote({ projects }: { projects: Project[] }) {
     }
   }
 
-  function file(kind: "todo" | "idea") {
+  function file(kind: Kind) {
     const body = text.trim();
     if (!body) return;
     start(async () => {
@@ -87,6 +92,8 @@ export default function SnapNote({ projects }: { projects: Project[] }) {
         fd.set("title", body);
         if (projectId) fd.set("project_id", projectId);
         await addTodo(fd);
+      } else if (kind === "reference") {
+        await saveReferenceFields({ body });
       } else {
         const fd = new FormData();
         fd.set("body", body);
@@ -100,21 +107,35 @@ export default function SnapNote({ projects }: { projects: Project[] }) {
   return (
     <div className="snap">
       <input
-        ref={fileRef}
+        ref={cameraRef}
         type="file"
         accept="image/*"
         capture="environment"
         onChange={onPick}
         hidden
       />
+      <input
+        ref={libraryRef}
+        type="file"
+        accept="image/*"
+        onChange={onPick}
+        hidden
+      />
       {!read && (
-        <button
-          className="snap-btn"
-          onClick={() => fileRef.current?.click()}
-          disabled={reading}
-        >
-          {reading ? "Reading the photo…" : "📷  Snap a note"}
-        </button>
+        <div className="snap-pick">
+          <button
+            className="snap-btn"
+            onClick={() => cameraRef.current?.click()}
+            disabled={reading}
+          >
+            {reading ? "Reading the photo…" : "📷  Take a photo"}
+          </button>
+          {!reading && (
+            <button className="snap-btn ghost" onClick={() => libraryRef.current?.click()}>
+              🖼  Choose from library
+            </button>
+          )}
+        </div>
       )}
       {err && <div className="snap-err">{err}</div>}
 
@@ -136,12 +157,30 @@ export default function SnapNote({ projects }: { projects: Project[] }) {
           {read.kind === "todo" && read.projectName && (
             <div className="snap-hint">Looks like a task for {read.projectName}.</div>
           )}
+          {read.kind === "reference" && (
+            <div className="snap-hint">Looks like a detail worth keeping.</div>
+          )}
           <div className="snap-actions">
-            <button className="btn" disabled={saving} onClick={() => file("idea")}>
-              Keep as idea
+            <button
+              className={`btn${read.kind === "idea" ? " primary" : ""}`}
+              disabled={saving}
+              onClick={() => file("idea")}
+            >
+              Idea
             </button>
-            <button className="btn primary" disabled={saving} onClick={() => file("todo")}>
-              Add as todo
+            <button
+              className={`btn${read.kind === "todo" ? " primary" : ""}`}
+              disabled={saving}
+              onClick={() => file("todo")}
+            >
+              Todo
+            </button>
+            <button
+              className={`btn${read.kind === "reference" ? " primary" : ""}`}
+              disabled={saving}
+              onClick={() => file("reference")}
+            >
+              Reference
             </button>
           </div>
           <button className="linkish" onClick={() => setRead(null)}>

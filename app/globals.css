@@ -628,6 +628,14 @@ button.title-edit {
 .snap-btn:disabled {
   opacity: 0.6;
 }
+.snap-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.snap-btn.ghost {
+  border-style: solid;
+}
 .snap-err {
   font-size: 0.8rem;
   color: var(--crit);

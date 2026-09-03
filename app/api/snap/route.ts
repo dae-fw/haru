@@ -27,13 +27,16 @@ export async function POST(req: Request) {
   try {
     const res = await client.messages.create({
       model: MODEL,
-      max_tokens: 700,
-      system: `You read text from a photo of a note and classify it.
+      max_tokens: 1500,
+      system: `You transcribe text from a photo and classify it.
 Known projects: ${names.length ? names.join(", ") : "(none)"}.
 Return ONLY minified JSON, no prose, no code fence:
-{"text": string, "kind": "todo" | "idea", "project": string | null}
-- "text" is the note's text, cleaned up lightly (fix obvious OCR slips, keep the wording).
-- "kind" is "todo" only if it's a clear actionable task; otherwise "idea".
+{"text": string, "kind": "todo" | "idea" | "reference", "project": string | null}
+- "text" is ALL readable text in the image, transcribed faithfully. Fix only obvious
+  OCR slips; keep line breaks. If you truly cannot read any text, set "text" to "".
+- "kind": "todo" for a clear actionable task; "reference" for a durable fact to keep
+  (numbers, dates, addresses, account/spec details, anything you'd look up later);
+  "idea" for anything else.
 - "project" is one of the known project names if it clearly belongs there, else null.`,
       messages: [
         {
@@ -66,17 +69,28 @@ Return ONLY minified JSON, no prose, no code fence:
   try {
     parsed = JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/g, ""));
   } catch {
-    // couldn't parse — fall back to treating the whole thing as an idea
-    return Response.json({ text: raw, kind: "idea", projectId: null, projectName: null });
+    // couldn't parse JSON — if the model just returned prose, use it as-is
+    if (raw && !raw.startsWith("{")) {
+      return Response.json({ text: raw, kind: "idea", projectId: null, projectName: null });
+    }
+    return Response.json({ error: "read_failed" }, { status: 502 });
   }
 
+  const text = (parsed.text ?? "").trim();
+  if (!text) {
+    return Response.json({ error: "empty" }, { status: 422 });
+  }
+
+  const kind = ["todo", "reference", "idea"].includes(parsed.kind ?? "")
+    ? (parsed.kind as "todo" | "reference" | "idea")
+    : "idea";
   const match = parsed.project
     ? projects.find((p) => p.name.toLowerCase() === parsed.project!.toLowerCase())
     : undefined;
 
   return Response.json({
-    text: (parsed.text ?? "").trim(),
-    kind: parsed.kind === "todo" ? "todo" : "idea",
+    text,
+    kind,
     projectId: match?.id ?? null,
     projectName: match?.name ?? null,
   });

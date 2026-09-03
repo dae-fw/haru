@@ -171,7 +171,21 @@ function tomorrowLine(ctx: PlanContext, today: string): string | null {
         .join(", ")}${dueTmr.length > 3 ? "…" : ""})`,
     );
   }
-  return `Tomorrow: ${bits.join("; ")}.`;
+  return `Tomorrow already has ${bits.join("; ")}.`;
+}
+
+function tagFor(t: Todo, today: string, eventProjectIds: Set<string>): string {
+  const tag =
+    t.due_date && t.due_date < today
+      ? "overdue"
+      : t.due_date === today
+        ? "due today"
+        : t.project_id && eventProjectIds.has(t.project_id)
+          ? "meeting today"
+          : t.flagged
+            ? "flagged"
+            : "";
+  return tag ? ` (${tag})` : "";
 }
 
 /** One continuous briefing — priorities now, what's already done, what's on for tomorrow. */
@@ -183,42 +197,40 @@ export function openingMessage(ctx: PlanContext): string {
   const pname = (id: string | null) =>
     id ? (ctx.projects.find((p) => p.id === id)?.name ?? "—") : "no project";
 
+  const part = dayPart(ctx.tz);
+  const hi = part === "morning" ? "Good morning." : part === "afternoon" ? "Good afternoon." : "Evening.";
+  const calList = ctx.events
+    .map((e) => `${e.allDay ? "all day" : timeInTz(e.start, ctx.tz)} ${e.title}`)
+    .join(", ");
+
   const parts: string[] = [];
 
-  // 1. the order to work in (or a calm note if there's nothing)
-  if (ranked.length) {
-    const lines = ranked.slice(0, 6).map((t, i) => {
-      const tag =
-        t.due_date && t.due_date < today
-          ? "overdue"
-          : t.due_date === today
-            ? "due today"
-            : t.project_id && eventProjectIds.has(t.project_id)
-              ? "meeting today"
-              : t.flagged
-                ? "flagged"
-                : "";
-      return `${i + 1}. ${t.title}${atTime(t)} — ${pname(t.project_id)}${tag ? ` (${tag})` : ""}`;
+  // 1. the lead — what wants attention, with the calendar folded in when it's light
+  if (ranked.length === 1) {
+    const t = ranked[0];
+    parts.push(`${hi} One thing worth starting with — ${t.title}${atTime(t)}${tagFor(t, today, eventProjectIds)}.`);
+  } else if (ranked.length > 1) {
+    const lines = ranked.slice(0, 6).map((t) => {
+      const proj = t.project_id ? ` · ${pname(t.project_id)}` : "";
+      return `· ${t.title}${atTime(t)}${proj}${tagFor(t, today, eventProjectIds)}`;
     });
-    parts.push(`Good ${dayPart(ctx.tz)}. Here's the order I'd go in:\n\n${lines.join("\n")}`);
+    parts.push(`${hi} A few things want attention:\n${lines.join("\n")}`);
   } else if (ctx.events.length) {
-    parts.push(`Good ${dayPart(ctx.tz)}. Nothing ranked to do, but the calendar isn't empty.`);
+    parts.push(`${hi} Nothing pressing on the list — but the calendar has ${calList}.`);
   } else {
-    parts.push(`Good ${dayPart(ctx.tz)}. Clear list, no events — a calm one.`);
+    parts.push(`${hi} Nothing on the list and the calendar's clear. An easy one.`);
   }
 
-  // 2. today's calendar
-  if (ctx.events.length) {
+  // 2. calendar as its own line only when there were tasks above
+  if (ranked.length && ctx.events.length) {
+    parts.push(`Calendar: ${calList}.`);
+  }
+
+  // 3. what's already behind you (afternoon / evening only — odd to say in the morning)
+  if (done.length && part !== "morning") {
     parts.push(
-      `On the calendar: ${ctx.events
-        .map((e) => `${e.allDay ? "all day" : timeInTz(e.start, ctx.tz)} ${e.title}`)
-        .join(", ")}.`,
+      `You've already cleared ${done.length} today${done.length >= 4 ? " — good run" : ""}.`,
     );
-  }
-
-  // 3. what's already behind you today
-  if (done.length) {
-    parts.push(`Done so far: ${done.length} — ${done.slice(0, 3).map((t) => t.title).join(", ")}${done.length > 3 ? "…" : ""}.`);
   }
 
   // 4. what's already waiting on tomorrow
@@ -232,10 +244,12 @@ export function openingMessage(ctx: PlanContext): string {
       month: "short",
       day: "numeric",
     });
-    parts.push(`One from your ideas (${when}): “${ctx.staleIdea.body}”. Still worth doing?`);
+    parts.push(`An older idea, still sitting since ${when}: “${ctx.staleIdea.body}”.`);
   }
 
-  parts.push("What do you want to start with?");
+  parts.push(
+    part === "evening" ? "Anything you want to shift before calling it?" : "Where do you want to start?",
+  );
   return parts.join("\n\n");
 }
 
