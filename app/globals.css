@@ -633,6 +633,25 @@ button.title-edit {
   flex-wrap: wrap;
   gap: 8px;
 }
+.ref-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px dashed var(--hair);
+  border-radius: var(--radius);
+  padding: 18px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+.ref-lockbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hair);
+}
 .snap-btn.ghost {
   border-style: solid;
 }

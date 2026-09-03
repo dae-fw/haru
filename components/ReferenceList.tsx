@@ -1,7 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { addReference, deleteReference, updateReference } from "@/app/(app)/actions";
+import {
+  biometricSupported,
+  disableLock,
+  enableLock,
+  lockEnabled,
+  relock,
+  unlock,
+  unlockedThisSession,
+} from "@/lib/biometric";
 import type { Reference } from "@/lib/types";
 
 function Row({ item }: { item: Reference }) {
@@ -87,6 +96,63 @@ export default function ReferenceList({ items }: { items: Reference[] }) {
   const [body, setBody] = useState("");
   const [pending, start] = useTransition();
 
+  // biometric lock
+  const [ready, setReady] = useState(false);
+  const [enabled, setEnabled] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [lockErr, setLockErr] = useState<string | null>(null);
+  const supported = ready && biometricSupported();
+
+  useEffect(() => {
+    setEnabled(lockEnabled());
+    setUnlocked(unlockedThisSession());
+    setReady(true);
+  }, []);
+
+  async function doEnable() {
+    setLockErr(null);
+    try {
+      await enableLock();
+      setEnabled(true);
+      setUnlocked(true);
+    } catch {
+      setLockErr("Couldn't set up Face ID here.");
+    }
+  }
+  async function doUnlock() {
+    setLockErr(null);
+    try {
+      if (await unlock()) setUnlocked(true);
+      else setLockErr("Didn't unlock.");
+    } catch {
+      setLockErr("Didn't unlock.");
+    }
+  }
+  function doRelock() {
+    relock();
+    setUnlocked(false);
+  }
+  function doDisable() {
+    disableLock();
+    setEnabled(false);
+    setUnlocked(false);
+  }
+
+  if (ready && enabled && !unlocked) {
+    return (
+      <div className="group">
+        <h2>Reference</h2>
+        <div className="ref-locked">
+          <div>🔒 Locked</div>
+          <button type="button" className="btn" onClick={doUnlock}>
+            Unlock with Face ID
+          </button>
+          {lockErr && <div className="snap-err">{lockErr}</div>}
+        </div>
+      </div>
+    );
+  }
+
   const field: React.CSSProperties = {
     width: "100%",
     border: "1px solid var(--hair)",
@@ -157,6 +223,32 @@ export default function ReferenceList({ items }: { items: Reference[] }) {
           <div className="empty">Nothing here yet.</div>
         )}
       </div>
+
+      {ready && (
+        <div className="ref-lockbar">
+          {!enabled && supported && (
+            <button type="button" className="linkish" onClick={doEnable}>
+              🔒 Lock with Face ID
+            </button>
+          )}
+          {!enabled && ready && !supported && (
+            <span style={{ fontSize: "0.76rem", color: "var(--ink-soft)" }}>
+              Face ID lock isn&apos;t available on this device.
+            </span>
+          )}
+          {enabled && (
+            <>
+              <button type="button" className="linkish" onClick={doRelock}>
+                Lock now
+              </button>
+              <button type="button" className="linkish" onClick={doDisable}>
+                Turn off lock
+              </button>
+            </>
+          )}
+          {lockErr && <span className="snap-err">{lockErr}</span>}
+        </div>
+      )}
     </div>
   );
 }
