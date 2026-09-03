@@ -388,6 +388,14 @@ export async function promoteIdea(id: string) {
   revalidateAll();
 }
 
+export async function updateIdea(id: string, body: string) {
+  const { supabase } = await requireUser();
+  const b = body.trim();
+  if (!b) return;
+  await supabase.from("haru_ideas").update({ body: b }).eq("id", id);
+  revalidateAll();
+}
+
 export async function deleteIdea(id: string) {
   const { supabase } = await requireUser();
   await supabase.from("haru_ideas").delete().eq("id", id);
