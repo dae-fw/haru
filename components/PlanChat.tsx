@@ -11,12 +11,12 @@ interface Turn {
 
 // The thread lives in sessionStorage: it survives hopping to Today and back,
 // and clears itself when the app/tab is closed. No server copy, nothing to expire.
-const keyFor = (mode: string) => `haru.plan.${mode}`;
+const KEY = "haru.plan";
 
-function loadThread(mode: string, opening: string): Turn[] {
+function loadThread(opening: string): Turn[] {
   const fresh: Turn[] = [{ role: "assistant", content: opening }];
   try {
-    const raw = sessionStorage.getItem(keyFor(mode));
+    const raw = sessionStorage.getItem(KEY);
     if (!raw) return fresh;
     const saved = JSON.parse(raw) as Turn[];
     if (!Array.isArray(saved) || saved.length < 2) return fresh;
@@ -27,13 +27,7 @@ function loadThread(mode: string, opening: string): Turn[] {
   }
 }
 
-export default function PlanChat({
-  opening,
-  mode = "day",
-}: {
-  opening: string;
-  mode?: "day" | "night";
-}) {
+export default function PlanChat({ opening }: { opening: string }) {
   const router = useRouter();
   const [turns, setTurns] = useState<Turn[]>(() => [
     { role: "assistant", content: opening },
@@ -42,12 +36,12 @@ export default function PlanChat({
   const [busy, setBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // restore any in-progress thread for this mode on mount / mode switch
+  // restore any in-progress thread on mount
   useEffect(() => {
-    setTurns(loadThread(mode, opening));
+    setTurns(loadThread(opening));
     setDraft("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, []);
 
   // keep the first (briefing) turn current without wiping the conversation
   useEffect(() => {
@@ -62,12 +56,12 @@ export default function PlanChat({
   // persist (only once there's a real exchange)
   useEffect(() => {
     try {
-      if (turns.length > 1) sessionStorage.setItem(keyFor(mode), JSON.stringify(turns));
-      else sessionStorage.removeItem(keyFor(mode));
+      if (turns.length > 1) sessionStorage.setItem(KEY, JSON.stringify(turns));
+      else sessionStorage.removeItem(KEY);
     } catch {
       /* private mode / quota — fine, just don't persist */
     }
-  }, [turns, mode]);
+  }, [turns]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -85,7 +79,6 @@ export default function PlanChat({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mode,
           messages: next.map(({ role, content }) => ({ role, content })),
         }),
       });
@@ -109,7 +102,7 @@ export default function PlanChat({
     setTurns([{ role: "assistant", content: opening }]);
     setDraft("");
     try {
-      sessionStorage.removeItem(keyFor(mode));
+      sessionStorage.removeItem(KEY);
     } catch {
       /* ignore */
     }
@@ -149,11 +142,7 @@ export default function PlanChat({
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={
-            mode === "night"
-              ? "Move or note anything before bed?"
-              : "What would you like to focus on?"
-          }
+          placeholder="What would you like to focus on?"
           disabled={busy}
         />
         <button type="submit" aria-label="Send" disabled={busy || !draft.trim()}>

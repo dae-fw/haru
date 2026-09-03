@@ -14,7 +14,8 @@ export const PLAN_MODEL = "claude-haiku-4-5";
 export type PlanMode = "day" | "night";
 
 export interface PlanContext {
-  mode: PlanMode;
+  /** Legacy: the cron still tags its context "night". The in-app screen is one mode. */
+  mode?: PlanMode;
   todos: Todo[];
   projects: Project[];
   events: CalEvent[];
@@ -137,44 +138,95 @@ function dayPart(tz: string): string {
   return h < 12 ? "morning" : h < 18 ? "afternoon" : "evening";
 }
 
+/** Tasks + calendar already sitting on tomorrow, as one sentence — or null if it's clear. */
+function tomorrowLine(ctx: PlanContext, today: string): string | null {
+  const tmr = nextDay(today);
+  const dueTmr = ctx.todos.filter((t) => t.status === "open" && t.due_date === tmr);
+  const evTmr = ctx.tomorrowEvents ?? [];
+  if (!dueTmr.length && !evTmr.length) return null;
+  const bits: string[] = [];
+  if (evTmr.length) {
+    bits.push(
+      evTmr
+        .slice(0, 3)
+        .map((e) => `${e.allDay ? "all day" : timeInTz(e.start, ctx.tz)} ${e.title}`)
+        .join(", ") + (evTmr.length > 3 ? "…" : ""),
+    );
+  }
+  if (dueTmr.length) {
+    bits.push(
+      `${dueTmr.length} task${dueTmr.length > 1 ? "s" : ""} due (${dueTmr
+        .slice(0, 3)
+        .map((t) => t.title)
+        .join(", ")}${dueTmr.length > 3 ? "…" : ""})`,
+    );
+  }
+  return `Tomorrow: ${bits.join("; ")}.`;
+}
+
+/** One continuous briefing — priorities now, what's already done, what's on for tomorrow. */
 export function openingMessage(ctx: PlanContext): string {
-  if (ctx.mode === "night") return goodnightMessage(ctx);
   const today = todayInTz(ctx.tz);
   const eventProjectIds = projectsWithEventToday(ctx.events, ctx.projects);
   const ranked = rankToday(ctx.todos, today, eventProjectIds);
+  const done = ctx.doneToday ?? [];
   const pname = (id: string | null) =>
     id ? (ctx.projects.find((p) => p.id === id)?.name ?? "—") : "no project";
 
-  if (ranked.length === 0 && ctx.events.length === 0) {
-    return `Good ${dayPart(ctx.tz)}. Nothing's pressing today — clear list, no events. Anything you want to line up for later this week?`;
+  const parts: string[] = [];
+
+  // 1. the order to work in (or a calm note if there's nothing)
+  if (ranked.length) {
+    const lines = ranked.slice(0, 6).map((t, i) => {
+      const tag =
+        t.due_date && t.due_date < today
+          ? "overdue"
+          : t.due_date === today
+            ? "due today"
+            : t.project_id && eventProjectIds.has(t.project_id)
+              ? "meeting today"
+              : t.flagged
+                ? "flagged"
+                : "";
+      return `${i + 1}. ${t.title} — ${pname(t.project_id)}${tag ? ` (${tag})` : ""}`;
+    });
+    parts.push(`Good ${dayPart(ctx.tz)}. Here's the order I'd go in:\n\n${lines.join("\n")}`);
+  } else if (ctx.events.length) {
+    parts.push(`Good ${dayPart(ctx.tz)}. Nothing ranked to do, but the calendar isn't empty.`);
+  } else {
+    parts.push(`Good ${dayPart(ctx.tz)}. Clear list, no events — a calm one.`);
   }
 
-  const lines: string[] = [];
-  ranked.slice(0, 6).forEach((t, i) => {
-    const tag =
-      t.due_date && t.due_date < today
-        ? "overdue"
-        : t.due_date === today
-          ? "due today"
-          : t.project_id && eventProjectIds.has(t.project_id)
-            ? "meeting today"
-            : t.flagged
-              ? "flagged"
-              : "";
-    lines.push(`${i + 1}. ${t.title} — ${pname(t.project_id)}${tag ? ` (${tag})` : ""}`);
-  });
-
-  const evLine = ctx.events.length
-    ? `\n\nOn the calendar: ${ctx.events
+  // 2. today's calendar
+  if (ctx.events.length) {
+    parts.push(
+      `On the calendar: ${ctx.events
         .map((e) => `${e.allDay ? "all day" : timeInTz(e.start, ctx.tz)} ${e.title}`)
-        .join(", ")}.`
-    : "";
+        .join(", ")}.`,
+    );
+  }
 
-  const body = lines.length
-    ? `Here's the order I'd go in:\n\n${lines.join("\n")}`
-    : "No ranked tasks, but there's stuff on the calendar.";
+  // 3. what's already behind you today
+  if (done.length) {
+    parts.push(`Done so far: ${done.length} — ${done.slice(0, 3).map((t) => t.title).join(", ")}${done.length > 3 ? "…" : ""}.`);
+  }
 
-  return `Good ${dayPart(ctx.tz)}. ${body}${evLine}\n\nWhat do you want to start with?`;
+  // 4. what's already waiting on tomorrow
+  const tmr = tomorrowLine(ctx, today);
+  if (tmr) parts.push(tmr);
+
+  // 5. an old idea, if one's gone stale
+  if (ctx.staleIdea) {
+    const when = new Date(ctx.staleIdea.created_at).toLocaleDateString("en-US", {
+      timeZone: ctx.tz,
+      month: "short",
+      day: "numeric",
+    });
+    parts.push(`One from your ideas (${when}): “${ctx.staleIdea.body}”. Still worth doing?`);
+  }
+
+  parts.push("What do you want to start with?");
+  return parts.join("\n\n");
 }
 
 export function buildSystemPrompt(ctx: PlanContext): string {
@@ -222,30 +274,21 @@ export function buildSystemPrompt(ctx: PlanContext): string {
     ...dueTmr.map((t) => `- task due: id=${t.id} "${t.title}"`),
   ].join("\n");
 
-  const role =
-    ctx.mode === "night"
-      ? `You are Haru, winding down the day with one person. It is evening on ${today} (timezone ${ctx.tz}).
+  const role = `You are Haru, a calm daily companion for one person. Today is ${today} (timezone ${ctx.tz}), ${dayPart(ctx.tz)}.
 
-Your job: a short recap — what got done, what's rolling over, and what's already on for tomorrow — then help them move or note anything before bed. Optionally resurface the stale idea below if it fits. Be brief and warm; one or two sentences per reply. Ask one thing at a time.
+Your job: help them decide what to work on, surface conflicts between their tasks and calendar, note what's already done, flag what's on for tomorrow, and make small changes when asked. In the evening this naturally reads more like a wind-down than a kickoff — follow the time of day. Be brief and warm — a sentence or two per reply, not paragraphs. Ask one thing at a time. You may resurface the stale idea below if it fits the moment.
 
 DONE TODAY:
-${doneLines || "(nothing logged)"}
+${doneLines || "(nothing logged yet)"}
 
-ROLLING TO TOMORROW (open, was due today or earlier):
+ROLLING (open, was due today or earlier):
 ${rollingLines || "(none)"}
 
-ALREADY ON FOR TOMORROW (${tmr}) — mention this so they know what they're walking into:
+ALREADY ON FOR TOMORROW (${tmr}):
 ${tomorrowLines || "(nothing scheduled)"}
 ${ctx.staleIdea ? `\nSTALE IDEA you may resurface: "${ctx.staleIdea.body}"` : ""}
 
-PRIORITY ORDER (for anything they want to reprioritise):`
-      : `You are Haru, a calm daily planning assistant for one person. Today is ${today} (timezone ${ctx.tz}).
-
-Your job: help them decide what to work on, surface conflicts between their tasks and calendar, and make small changes when asked. Be brief and warm — a sentence or two per reply, not paragraphs. Ask one question at a time.
-
-PRIORITY ORDER (use this exact order when suggesting what to do first):`;
-
-  return `${role}
+PRIORITY ORDER (use this exact order when suggesting what to do first):
 1. Overdue todos
 2. Todos due today
 3. Todos tied to a project that has a calendar event today
@@ -265,4 +308,6 @@ ${todoLines || "(none)"}
 TODAY'S CALENDAR EVENTS:
 ${eventLines}
 ${ctx.googleConnected ? "" : "\n(Calendar is not connected — create_event / move_event are unavailable.)"}`;
+
+  return role;
 }

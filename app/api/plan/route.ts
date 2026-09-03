@@ -2,9 +2,15 @@ import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { getDoneToday, getIdeas, getOpenTodos, getProjects } from "@/lib/data";
-import { getTodayEvents, isGoogleConnected, createCalendarEvent, moveCalendarEvent } from "@/lib/google";
+import {
+  getTodayEvents,
+  getTomorrowEvents,
+  isGoogleConnected,
+  createCalendarEvent,
+  moveCalendarEvent,
+} from "@/lib/google";
 import { getTimeZone } from "@/lib/tz.server";
-import { buildSystemPrompt, PLAN_MODEL, type PlanContext, type PlanMode } from "@/lib/plan";
+import { buildSystemPrompt, PLAN_MODEL, type PlanContext } from "@/lib/plan";
 import {
   completeTodo,
   rescheduleTodo,
@@ -28,9 +34,7 @@ export async function POST(req: Request) {
 
   const body = (await req.json()) as {
     messages: { role: "user" | "assistant"; content: string }[];
-    mode?: string;
   };
-  const mode: PlanMode = body.mode === "night" ? "night" : "day";
   const history: Msg[] = (body.messages ?? [])
     .filter((m) => m.content?.trim())
     .map((m) => ({ role: m.role, content: m.content }));
@@ -39,24 +43,23 @@ export async function POST(req: Request) {
   }
 
   const tz = await getTimeZone();
-  const [projects, todos, connected] = await Promise.all([
+  const [projects, todos, connected, ideas, doneToday] = await Promise.all([
     getProjects(),
     getOpenTodos(),
     isGoogleConnected(),
+    getIdeas(),
+    getDoneToday(),
   ]);
-  const events = mode === "day" && connected ? await getTodayEvents(tz) : [];
+  const [events, tomorrowEvents] = await Promise.all([
+    connected ? getTodayEvents(tz) : Promise.resolve([]),
+    connected ? getTomorrowEvents(tz) : Promise.resolve([]),
+  ]);
 
-  let doneToday, staleIdea;
-  if (mode === "night") {
-    const [done, ideas] = await Promise.all([getDoneToday(), getIdeas()]);
-    doneToday = done;
-    const cutoff = Date.now() - 10 * 864e5;
-    const old = ideas.filter((i) => new Date(i.created_at).getTime() < cutoff);
-    staleIdea = old.length ? old[Math.floor(Math.random() * old.length)] : null;
-  }
+  const cutoff = Date.now() - 10 * 864e5;
+  const old = ideas.filter((i) => new Date(i.created_at).getTime() < cutoff);
+  const staleIdea = old.length ? old[Math.floor(Math.random() * old.length)] : null;
 
   const ctx: PlanContext = {
-    mode,
     todos,
     projects,
     events,
@@ -64,6 +67,7 @@ export async function POST(req: Request) {
     tz,
     doneToday,
     staleIdea,
+    tomorrowEvents,
   };
 
   const tools: Anthropic.Tool[] = [

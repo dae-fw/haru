@@ -3,47 +3,34 @@ import { getDoneToday, getIdeas, getOpenTodos, getProjects } from "@/lib/data";
 import { getTodayEvents, getTomorrowEvents, isGoogleConnected } from "@/lib/google";
 import { getTimeZone } from "@/lib/tz.server";
 import { hourInTz } from "@/lib/tz";
-import { openingMessage, type PlanContext, type PlanMode } from "@/lib/plan";
+import { openingMessage, type PlanContext } from "@/lib/plan";
 import PlanChat from "@/components/PlanChat";
 import Gear from "@/components/Gear";
 
 export const dynamic = "force-dynamic";
 
-export default async function PlanPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ m?: string }>;
-}) {
+export default async function PlanPage() {
   await requireUser();
-  const [{ m }, tz] = await Promise.all([searchParams, getTimeZone()]);
-  // One continuous conversation — it just leans "recap" in the evening.
-  // ?m= still forces a mode (the goodnight push links to ?m=night).
-  const mode: PlanMode =
-    m === "night" ? "night" : m === "day" ? "day" : hourInTz(tz) >= 18 ? "night" : "day";
+  const tz = await getTimeZone();
+  const evening = hourInTz(tz) >= 18;
 
-  const [projects, todos, connected] = await Promise.all([
+  const [projects, todos, connected, ideas] = await Promise.all([
     getProjects(),
     getOpenTodos(),
     isGoogleConnected(),
+    getIdeas(),
   ]);
-  const events = mode === "day" && connected ? await getTodayEvents(tz) : [];
+  const [events, tomorrowEvents, doneToday] = await Promise.all([
+    connected ? getTodayEvents(tz) : Promise.resolve([]),
+    connected ? getTomorrowEvents(tz) : Promise.resolve([]),
+    getDoneToday(),
+  ]);
 
-  let doneToday, staleIdea, tomorrowEvents;
-  if (mode === "night") {
-    const [done, ideas, tmr] = await Promise.all([
-      getDoneToday(),
-      getIdeas(),
-      connected ? getTomorrowEvents(tz) : Promise.resolve([]),
-    ]);
-    doneToday = done;
-    tomorrowEvents = tmr;
-    const cutoff = Date.now() - 10 * 864e5;
-    const old = ideas.filter((i) => new Date(i.created_at).getTime() < cutoff);
-    staleIdea = old.length ? old[Math.floor(Math.random() * old.length)] : null;
-  }
+  const cutoff = Date.now() - 10 * 864e5;
+  const old = ideas.filter((i) => new Date(i.created_at).getTime() < cutoff);
+  const staleIdea = old.length ? old[Math.floor(Math.random() * old.length)] : null;
 
   const ctx: PlanContext = {
-    mode,
     todos,
     projects,
     events,
@@ -58,20 +45,14 @@ export default async function PlanPage({
     <>
       <header className="screen-head">
         <div className="eyebrow">Plan · Haiku 4.5</div>
-        <h1>{mode === "night" ? "Goodnight recap" : "Plan the day together"}</h1>
+        <h1>{evening ? "Wind down together" : "Plan the day together"}</h1>
         <div className="sub">
-          {mode === "night"
-            ? "What got done, and what's on for tomorrow"
-            : `Knows your todos${connected ? " and calendar" : ""}`}
-          {" · "}
-          <a href={mode === "night" ? "/plan?m=day" : "/plan?m=night"} className="linkish">
-            {mode === "night" ? "plan the day instead" : "goodnight recap instead"}
-          </a>
+          Your todos{connected ? ", calendar" : ""}, what&apos;s done, and what&apos;s on for tomorrow
         </div>
         <Gear />
       </header>
       <div className="body plan-body">
-        <PlanChat opening={openingMessage(ctx)} mode={mode} />
+        <PlanChat opening={openingMessage(ctx)} />
       </div>
     </>
   );

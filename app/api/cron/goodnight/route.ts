@@ -80,7 +80,7 @@ async function handler(req: Request) {
   const { sent, stale } = await sendPush(subs, {
     title: "Goodnight",
     body,
-    url: "/plan?m=night",
+    url: "/plan",
     tag: "haru-goodnight",
   });
   if (stale.length) await admin.from("haru_push_subs").delete().in("endpoint", stale);
