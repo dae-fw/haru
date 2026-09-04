@@ -28,6 +28,9 @@ export async function addTodo(formData: FormData) {
   const due = String(formData.get("due_date") ?? "") || null;
   const dueTime = String(formData.get("due_time") ?? "").trim() || null;
   const flagged = formData.get("flagged") === "on";
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+  const remRaw = String(formData.get("reminder_min") ?? "").trim();
+  const reminderMin = due && remRaw !== "" ? Number(remRaw) : null;
 
   let recurrence: unknown = null;
   const recRaw = String(formData.get("recurrence") ?? "");
@@ -48,6 +51,8 @@ export async function addTodo(formData: FormData) {
       project_id: projectId,
       due_date: due,
       due_time: due ? dueTime : null,
+      notes,
+      reminder_min: Number.isFinite(reminderMin) ? reminderMin : null,
       flagged,
       recurrence,
     })

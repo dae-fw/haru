@@ -1,12 +1,10 @@
-import type { Idea, Todo } from "@/lib/types";
+import type { Todo } from "@/lib/types";
 
 export type OrganizeMode = "today" | "tomorrow" | "loose";
 
 export interface OrganizeItem {
-  kind: "todo" | "idea";
   id: string;
-  todo?: Todo;
-  idea?: Idea;
+  todo: Todo;
   /** tomorrow mode: this card is an undated task being offered for tomorrow */
   pullIn?: boolean;
   /** loose mode: this task has no project — show project chips */
@@ -31,12 +29,11 @@ export function thisWeekDate(today: string): string {
   return d;
 }
 
-/** Count for the Organize tab badge: undated + no-project open todos, plus loose ideas. */
-export function looseEndsCount(open: Todo[], ideaCount: number): number {
-  const stuck = open.filter(
+/** Count for the Organize tab badge: undated + no-project open todos. Notes aren't touched. */
+export function looseEndsCount(open: Todo[]): number {
+  return open.filter(
     (t) => isOpen(t) && (t.due_date == null || t.project_id == null),
   ).length;
-  return stuck + ideaCount;
 }
 
 function byTime(a: Todo, b: Todo) {
@@ -46,16 +43,14 @@ function byTime(a: Todo, b: Todo) {
   );
 }
 
-/** Build the card queue for a mode. */
+/** Build the card queue for a mode. Notes/ideas are never included — they live in Capture. */
 export function organizeQueue(
   mode: OrganizeMode,
   open: Todo[],
-  ideas: Idea[],
   today: string,
 ): OrganizeItem[] {
   const tomorrow = addDays(today, 1);
   const t = (todo: Todo, extra: Partial<OrganizeItem> = {}): OrganizeItem => ({
-    kind: "todo",
     id: todo.id,
     todo,
     ...extra,
@@ -83,7 +78,7 @@ export function organizeQueue(
     return [...due, ...undated];
   }
 
-  // loose ends: undated ∪ no-project open todos, then ideas
+  // loose ends: undated ∪ no-project open todos
   const seen = new Set<string>();
   const stuck: OrganizeItem[] = [];
   for (const x of open) {
@@ -94,14 +89,9 @@ export function organizeQueue(
     stuck.push(t(x, { needsProject: x.project_id == null }));
   }
   stuck.sort((a, b) => {
-    const an = a.todo!.due_date == null ? 0 : 1;
-    const bn = b.todo!.due_date == null ? 0 : 1;
+    const an = a.todo.due_date == null ? 0 : 1;
+    const bn = b.todo.due_date == null ? 0 : 1;
     return an - bn;
   });
-  const ideaItems: OrganizeItem[] = ideas.map((i) => ({
-    kind: "idea" as const,
-    id: i.id,
-    idea: i,
-  }));
-  return [...stuck, ...ideaItems];
+  return stuck;
 }

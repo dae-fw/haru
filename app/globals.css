@@ -143,7 +143,8 @@ a {
 }
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
   color: inherit;
 }
@@ -1172,6 +1173,13 @@ button.title-edit {
 .field button:disabled {
   opacity: 0.5;
 }
+.field button.qa-details {
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--hair);
+  font-size: 1.1rem;
+  line-height: 1;
+}
 .nlp-preview {
   display: flex;
   gap: 6px;
@@ -1702,13 +1710,12 @@ button.title-edit {
   100% { transform: scale(1); }
 }
 
-/* new row / card: drop in */
+/* new card: drop in. NOT on .list rows — any server revalidate re-mounts the
+   whole list and every row would replay it (the "shaky" bug). */
 @keyframes drop-in {
   from { opacity: 0; transform: translateY(-9px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.list > li.row,
-.idea,
 .snap-card {
   animation: drop-in 0.28s ease both;
 }

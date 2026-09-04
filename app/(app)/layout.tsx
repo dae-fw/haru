@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { getIdeas, getOpenTodos, getPrefs, isOnToday } from "@/lib/data";
+import { getOpenTodos, getPrefs, isOnToday } from "@/lib/data";
 import { looseEndsCount } from "@/lib/organize";
 import { todayInTz } from "@/lib/tz";
 import { getTimeZone } from "@/lib/tz.server";
@@ -16,18 +16,17 @@ export default async function AppLayout({
 }) {
   await requireUser(); // gate every app route
 
-  const [open, tz, prefs, ideas] = await Promise.all([
+  const [open, tz, prefs] = await Promise.all([
     getOpenTodos(),
     getTimeZone(),
     getPrefs(),
-    getIdeas(),
   ]);
   const today = todayInTz(tz);
   const overdue = open.filter(
     (t) => t.status !== "waiting" && t.due_date != null && t.due_date < today,
   ).length;
   const todayCount = open.filter((t) => isOnToday(t, today)).length;
-  const loose = looseEndsCount(open, ideas.length);
+  const loose = looseEndsCount(open);
 
   return (
     <div className="shell">

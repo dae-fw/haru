@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { addTodo } from "@/app/(app)/actions";
 import { parseTodoInput } from "@/lib/nlp";
 import { enqueue } from "@/lib/offlineQueue";
+import AddTodoSheet from "@/components/AddTodoSheet";
 import type { Project } from "@/lib/types";
 
 function todayLocalISO() {
@@ -24,6 +25,7 @@ export default function QuickAddTodo({
   dueToday?: boolean;
 }) {
   const [text, setText] = useState("");
+  const [sheet, setSheet] = useState(false);
   const [pending, start] = useTransition();
   const parsed = useMemo(() => parseTodoInput(text, projects), [text, projects]);
   const showPreview = text.trim().length > 0 && parsed.hints.length > 0;
@@ -77,10 +79,33 @@ export default function QuickAddTodo({
           placeholder={placeholder}
           autoComplete="off"
         />
+        <button
+          type="button"
+          className="qa-details"
+          aria-label="Add with details"
+          onClick={() => setSheet(true)}
+        >
+          ⋯
+        </button>
         <button type="submit" aria-label="Add task" disabled={pending || !text.trim()}>
           +
         </button>
       </form>
+      {sheet && (
+        <AddTodoSheet
+          projects={projects}
+          initial={{
+            title: parsed.title || text.trim(),
+            due: parsed.dueDate ?? (dueToday ? todayLocalISO() : ""),
+            dueTime: parsed.dueTime,
+            projectId: parsed.projectId,
+          }}
+          onClose={() => {
+            setSheet(false);
+            setText("");
+          }}
+        />
+      )}
       {showPreview && (
         <div className="nlp-preview">
           <span className="nlp-title">{parsed.title}</span>

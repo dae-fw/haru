@@ -54,6 +54,15 @@ export default function TodoRow({
   const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [localDone, setLocalDone] = useState(todo.status === "done");
+  // optimistic subtask state so a tap flips instantly
+  const [optSubs, setOptSubs] = useState(todo.subtasks ?? []);
+  useEffect(() => setOptSubs(todo.subtasks ?? []), [todo.subtasks]);
+  function flipSub(subId: string) {
+    setOptSubs((arr) =>
+      arr.map((s) => (s.id === subId ? { ...s, done: !s.done } : s)),
+    );
+    start(() => toggleSubtask(todo.id, subId));
+  }
   // completing, inside the 5s undo window — not yet sent to the server
   const [grace, setGrace] = useState(false);
   const graceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -97,7 +106,7 @@ export default function TodoRow({
   const overdue = !done && todo.due_date != null && todo.due_date < today;
   const dueToday = !done && todo.due_date === today;
   const laterLabel = !done && todo.due_date ? dueLabel(todo.due_date) : null;
-  const subs = todo.subtasks ?? [];
+  const subs = optSubs;
   const subsDone = subs.filter((s) => s.done).length;
 
   function undo() {
@@ -216,7 +225,7 @@ export default function TodoRow({
                 edit
               </button>
               <button className="resched" onClick={() => setSheet(true)}>
-                {todo.recurrence ? "reschedule / repeat" : "reschedule / park"}
+                reschedule / park
               </button>
             </>
           )}
@@ -230,7 +239,7 @@ export default function TodoRow({
                 <button
                   className={`subcheck${s.done ? " on" : ""}`}
                   aria-label={s.done ? "Undo subtask" : "Complete subtask"}
-                  onClick={() => start(() => toggleSubtask(todo.id, s.id))}
+                  onClick={() => flipSub(s.id)}
                 />
                 <span>{s.title}</span>
               </li>

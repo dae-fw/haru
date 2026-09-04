@@ -4,10 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   completeTodo,
-  deleteIdea,
   deleteTodo,
   parkTodo,
-  promoteIdea,
   rescheduleTodo,
   updateTodo,
 } from "@/app/(app)/actions";
@@ -78,20 +76,18 @@ export default function OrganizeRunner({
   }
 
   const todo = item.todo;
-  const idea = item.idea;
-  const projName = todo?.project_id
+  const projName = todo.project_id
     ? projects.find((p) => p.id === todo.project_id)?.name ?? "—"
     : null;
 
-  const stateLine = todo
-    ? todo.due_date && todo.due_date < todayISO
+  const stateLine =
+    todo.due_date && todo.due_date < todayISO
       ? `overdue since ${todo.due_date}`
       : todo.due_date === todayISO
         ? `due today${todo.due_time ? ` · ${fmt12(todo.due_time)}` : ""}`
         : todo.due_date
           ? `due ${todo.due_date}${todo.due_time ? ` · ${fmt12(todo.due_time)}` : ""}`
-          : "no due date"
-    : "loose idea";
+          : "no due date";
 
   return (
     <div className="org-wrap">
@@ -106,7 +102,7 @@ export default function OrganizeRunner({
 
       <div className="org-card">
         <div className="org-state">{stateLine}</div>
-        <div className="org-title">{todo ? todo.title : idea!.body}</div>
+        <div className="org-title">{todo.title}</div>
         {projName && (
           <div className="org-proj">
             <span className="dot" />
@@ -114,21 +110,7 @@ export default function OrganizeRunner({
           </div>
         )}
 
-        {idea ? (
-          <div className="org-actions">
-            <button className="btn primary" disabled={pending}
-              onClick={() => run("→ todo", () => promoteIdea(idea.id))}>
-              Make a todo
-            </button>
-            <button className="btn" disabled={pending} onClick={() => next("kept")}>
-              Keep
-            </button>
-            <button className="btn danger" disabled={pending}
-              onClick={() => run("deleted", () => deleteIdea(idea.id))}>
-              Delete
-            </button>
-          </div>
-        ) : item.pullIn ? (
+        {item.pullIn ? (
           <>
             <div className="org-when-lbl">Do this tomorrow?</div>
             <div className="org-actions">

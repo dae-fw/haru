@@ -3,7 +3,6 @@ import { getDoneSince, getOpenTodos, getProjects } from "@/lib/data";
 import { getTimeZone } from "@/lib/tz.server";
 import { todayInTz, tzOffset } from "@/lib/tz";
 import Gear from "@/components/Gear";
-import Link from "next/link";
 import type { Project } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -158,9 +157,6 @@ export default async function ReviewPage() {
           )}
         </div>
 
-        <Link href="/plan" className="cta">
-          Talk it through →
-        </Link>
       </div>
     </>
   );

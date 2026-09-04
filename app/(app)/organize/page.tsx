@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { getIdeas, getOpenTodos, getProjects } from "@/lib/data";
+import { getOpenTodos, getProjects } from "@/lib/data";
 import { getTimeZone } from "@/lib/tz.server";
 import { todayInTz } from "@/lib/tz";
 import {
@@ -21,24 +21,20 @@ export default async function OrganizePage({
 }) {
   await requireUser();
   const [{ m }, tz] = await Promise.all([searchParams, getTimeZone()]);
-  const [open, ideas, projects] = await Promise.all([
-    getOpenTodos(),
-    getIdeas(),
-    getProjects(),
-  ]);
+  const [open, projects] = await Promise.all([getOpenTodos(), getProjects()]);
   const today = todayInTz(tz);
 
   const counts = {
-    today: organizeQueue("today", open, ideas, today).length,
-    tomorrow: organizeQueue("tomorrow", open, ideas, today).length,
-    loose: organizeQueue("loose", open, ideas, today).length,
+    today: organizeQueue("today", open, today).length,
+    tomorrow: organizeQueue("tomorrow", open, today).length,
+    loose: organizeQueue("loose", open, today).length,
   };
 
   const mode: OrganizeMode | null =
     m === "today" || m === "tomorrow" || m === "loose" ? m : null;
 
   if (mode) {
-    const items = organizeQueue(mode, open, ideas, today);
+    const items = organizeQueue(mode, open, today);
     return (
       <>
         <header className="screen-head">
@@ -100,7 +96,7 @@ export default async function OrganizePage({
               k="loose"
               label="Loose ends"
               count={counts.loose}
-              hint="Undated, no project, stray ideas"
+              hint="Undated or unfiled tasks"
             />
           </div>
         )}
