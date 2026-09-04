@@ -17,8 +17,8 @@ export const getProjects = cache(async (): Promise<Project[]> => {
   return data ?? [];
 });
 
-export const getOpenTodos = cache(async (): Promise<Todo[]> => {
-  await syncGoogleTasks(); // pull in any new Google Tasks before we read
+/** Open + waiting todos, straight from the DB. */
+export const getOpenTodosRaw = cache(async (): Promise<Todo[]> => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("haru_todos")
@@ -27,6 +27,11 @@ export const getOpenTodos = cache(async (): Promise<Todo[]> => {
     .order("due_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
   return (data as Todo[]) ?? [];
+});
+
+export const getOpenTodos = cache(async (): Promise<Todo[]> => {
+  await syncGoogleTasks(); // pull in any new Google Tasks before we read
+  return getOpenTodosRaw();
 });
 
 export const getDoneToday = cache(async (): Promise<Todo[]> => {

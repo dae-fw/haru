@@ -1,10 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { getDoneToday, getIdeas, getOpenTodos, getProjects, getReference } from "@/lib/data";
+import { getDoneToday, getIdeas, getOpenTodosRaw, getProjects, getReference } from "@/lib/data";
 import {
   getTodayEvents,
-  getTomorrowEvents,
   getEventsBetween,
   isGoogleConnected,
   createCalendarEvent,
@@ -47,18 +46,19 @@ export async function POST(req: Request) {
   }
 
   const tz = await getTimeZone();
+  // No Google Tasks sync here (the Today/All pages do that) and no tomorrow
+  // calendar sweep — the get_events tool covers other days on demand. Keeps
+  // each chat turn to one DB read + one calendar read.
   const [projects, todos, connected, ideas, doneToday, reference] = await Promise.all([
     getProjects(),
-    getOpenTodos(),
+    getOpenTodosRaw(),
     isGoogleConnected(),
     getIdeas(),
     getDoneToday(),
     getReference(),
   ]);
-  const [events, tomorrowEvents] = await Promise.all([
-    connected ? getTodayEvents(tz) : Promise.resolve([]),
-    connected ? getTomorrowEvents(tz) : Promise.resolve([]),
-  ]);
+  const events = connected ? await getTodayEvents(tz) : [];
+  const tomorrowEvents: never[] = [];
 
   const cutoff = Date.now() - 10 * 864e5;
   const old = ideas.filter((i) => new Date(i.created_at).getTime() < cutoff);
@@ -190,11 +190,17 @@ export async function POST(req: Request) {
   const actions: string[] = [];
   let mutated = false;
 
+  // Cache the (large) system prompt + tools so tool-loop steps and quick
+  // follow-up messages skip re-processing them.
+  const system: Anthropic.TextBlockParam[] = [
+    { type: "text", text: buildSystemPrompt(ctx), cache_control: { type: "ephemeral" } },
+  ];
+
   for (let step = 0; step < MAX_STEPS; step++) {
     const res = await client.messages.create({
       model: PLAN_MODEL,
       max_tokens: 1024,
-      system: buildSystemPrompt(ctx),
+      system,
       tools,
       messages,
     });
