@@ -8,7 +8,13 @@ export default function IdeaRow({ idea }: { idea: Idea }) {
   const [editing, setEditing] = useState(false);
   const [body, setBody] = useState(idea.body);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [pending, start] = useTransition();
+
+  function remove() {
+    setRemoving(true);
+    setTimeout(() => start(() => deleteIdea(idea.id)), 340);
+  }
 
   const when = new Date(idea.created_at).toLocaleDateString(undefined, {
     month: "short",
@@ -61,7 +67,7 @@ export default function IdeaRow({ idea }: { idea: Idea }) {
   }
 
   return (
-    <div className="idea">
+    <div className={`idea${removing ? " removing" : ""}`}>
       <div className="i-body">{idea.body}</div>
       <div className="i-meta">
         <span>{when}</span>
@@ -75,7 +81,7 @@ export default function IdeaRow({ idea }: { idea: Idea }) {
           <button
             type="button"
             style={{ color: "var(--bad, #c0392b)" }}
-            onClick={() => start(() => deleteIdea(idea.id))}
+            onClick={remove}
           >
             really?
           </button>

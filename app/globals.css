@@ -501,6 +501,7 @@ select {
   cursor: pointer;
   display: grid;
   place-items: center;
+  position: relative;
   transition: transform 0.12s;
 }
 .check:active {
@@ -570,6 +571,19 @@ button.title-edit {
 }
 .row.playing .check {
   animation: chk-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.row.playing .check::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 12px;
+  border: 2px solid var(--good);
+  animation: chk-ring 0.5s 0.02s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes chk-ring {
+  from { opacity: 0.85; transform: scale(0.55); }
+  to { opacity: 0; transform: scale(1.2); }
 }
 .row.playing .check svg {
   animation: chk-draw 0.28s 0.1s ease forwards;
@@ -1431,6 +1445,63 @@ button.title-edit {
   font-size: 0.82rem;
 }
 
+/* ---- shared interaction animations (see prefers-reduced-motion block) ---- */
+
+/* button: squish + spring back */
+.btn,
+.snap-btn,
+.cta,
+.resched,
+.field button,
+.plan-composer button,
+.snap-actions .btn {
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease,
+    border-color 0.15s ease, color 0.15s ease;
+}
+.btn:active,
+.snap-btn:active,
+.cta:active,
+.resched:active,
+.field button:active,
+.plan-composer button:active {
+  transform: scale(0.93);
+}
+
+/* chip / filter: pop + fill when it becomes selected */
+.all-filter.on,
+.chip.subs-chip.on,
+.plan-modebar .seg button.on {
+  animation: chip-pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes chip-pop {
+  0% { transform: scale(0.9); }
+  45% { transform: scale(1.13); }
+  100% { transform: scale(1); }
+}
+
+/* new row / card: drop in */
+@keyframes drop-in {
+  from { opacity: 0; transform: translateY(-9px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.list > li.row,
+.idea,
+.snap-card {
+  animation: drop-in 0.28s ease both;
+}
+
+/* delete: slide out */
+@keyframes slide-out {
+  40% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(46%); height: 0; }
+}
+.row.removing,
+.idea.removing {
+  animation: slide-out 0.36s ease forwards;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 /* tab bar */
 .tabbar {
   display: flex;
@@ -1478,14 +1549,14 @@ button.title-edit {
 .tabbar a:active {
   transform: scaleY(0.9);
 }
-.tabbar a.sel {
-  animation: tab-squish 0.42s cubic-bezier(0.34, 1.7, 0.5, 1);
+.tabbar a.sel .iconwrap {
+  animation: tab-hop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-@keyframes tab-squish {
-  0% { transform: scaleY(0.9); }
-  40% { transform: scaleY(1.06); }
-  70% { transform: scaleY(0.98); }
-  100% { transform: scaleY(1); }
+@keyframes tab-hop {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-6px); }
+  70% { transform: translateY(1px); }
+  100% { transform: translateY(0); }
 }
 .tabbar {
   padding-bottom: env(safe-area-inset-bottom);
@@ -1516,14 +1587,34 @@ button.title-edit {
 @media (prefers-reduced-motion: reduce) {
   .check,
   .check:active,
+  .check::after,
   .sheet,
+  .row,
   .row.playing,
   .row.playing .check,
   .row.playing .check svg,
+  .row.playing .check::after,
   .row.playing .title,
+  .row.removing,
+  .idea,
+  .idea.removing,
+  .snap-card,
+  .list > li.row,
+  .btn,
+  .btn:active,
+  .snap-btn,
+  .snap-btn:active,
+  .cta,
+  .cta:active,
+  .resched,
+  .field button,
+  .plan-composer button,
+  .all-filter.on,
+  .chip.subs-chip.on,
+  .plan-modebar .seg button.on,
   .tabicon,
   .tabbar a,
-  .tabbar a.sel,
+  .tabbar a.sel .iconwrap,
   .tabbar a:active,
   .earlier .chev,
   .earlier-wrap,
@@ -1532,5 +1623,9 @@ button.title-edit {
     transition: none !important;
     animation: none !important;
     transform: none !important;
+  }
+  .row.removing,
+  .idea.removing {
+    display: none !important;
   }
 }

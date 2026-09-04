@@ -18,11 +18,17 @@ function Row({ item }: { item: Reference }) {
   const [label, setLabel] = useState(item.label ?? "");
   const [body, setBody] = useState(item.body);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [pending, start] = useTransition();
+
+  function remove() {
+    setRemoving(true);
+    setTimeout(() => start(() => deleteReference(item.id)), 340);
+  }
 
   if (!editing) {
     return (
-      <div className="idea">
+      <div className={`idea${removing ? " removing" : ""}`}>
         {item.label && <div className="i-label">{item.label}</div>}
         <div className="i-body">{item.body}</div>
         <div className="i-meta">
@@ -33,7 +39,7 @@ function Row({ item }: { item: Reference }) {
             <button
               type="button"
               style={{ color: "var(--bad, #c0392b)" }}
-              onClick={() => start(() => deleteReference(item.id))}
+              onClick={remove}
             >
               really?
             </button>

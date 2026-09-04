@@ -9,7 +9,13 @@ export default function ProjectRow({ project }: { project: Project }) {
   const [name, setName] = useState(project.name);
   const [color, setColor] = useState(project.color);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [pending, start] = useTransition();
+
+  function remove() {
+    setRemoving(true);
+    setTimeout(() => start(() => deleteProject(project.id)), 340);
+  }
 
   function save() {
     if (!name.trim() || pending) return;
@@ -37,7 +43,7 @@ export default function ProjectRow({ project }: { project: Project }) {
   }
 
   return (
-    <li className="row" style={{ alignItems: "center" }}>
+    <li className={`row${removing ? " removing" : ""}`} style={{ alignItems: "center" }}>
       <input
         type="color"
         value={color}
@@ -71,7 +77,7 @@ export default function ProjectRow({ project }: { project: Project }) {
         <button
           className="resched"
           style={{ color: "var(--bad, #c0392b)" }}
-          onClick={() => start(() => deleteProject(project.id))}
+          onClick={remove}
         >
           really?
         </button>
