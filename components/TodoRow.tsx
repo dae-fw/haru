@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { completeTodo, reopenTodo, toggleSubtask } from "@/app/(app)/actions";
 import { burstFrom } from "@/lib/confetti";
 import { enqueue, offlineCompletedIds, onQueueChange } from "@/lib/offlineQueue";
@@ -38,6 +38,7 @@ export default function TodoRow({
   showTools?: boolean;
   hint?: string;
 }) {
+  const GRACE_MS = 5000;
   const [, start] = useTransition();
   const [sheet, setSheet] = useState(false);
   const [edit, setEdit] = useState(false);
@@ -46,7 +47,10 @@ export default function TodoRow({
   const checkRef = useRef<HTMLButtonElement>(null);
   const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [optDone, setOptDone] = useOptimistic(todo.status === "done");
+  const [localDone, setLocalDone] = useState(todo.status === "done");
+  // completing, inside the 5s undo window — not yet sent to the server
+  const [grace, setGrace] = useState(false);
+  const graceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // completed while offline, waiting to sync
   const [queuedDone, setQueuedDone] = useState(false);
   useEffect(() => {
@@ -54,7 +58,34 @@ export default function TodoRow({
     sync();
     return onQueueChange(sync);
   }, [todo.id]);
-  const done = optDone || queuedDone;
+  const done = localDone || queuedDone;
+
+  const commit = useRef(() => {});
+  commit.current = () => {
+    graceTimer.current = null;
+    setGrace(false);
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      enqueue({ type: "complete", todoId: todo.id });
+      setQueuedDone(true);
+      return;
+    }
+    start(async () => {
+      try {
+        await completeTodo(todo.id);
+      } catch {
+        setLocalDone(false);
+      }
+    });
+  };
+  // fire the pending commit if the row unmounts (e.g. leaving the screen)
+  useEffect(() => {
+    return () => {
+      if (graceTimer.current) {
+        clearTimeout(graceTimer.current);
+        commit.current();
+      }
+    };
+  }, []);
 
   const today = todayISO();
   const overdue = !done && todo.due_date != null && todo.due_date < today;
@@ -63,27 +94,37 @@ export default function TodoRow({
   const subs = todo.subtasks ?? [];
   const subsDone = subs.filter((s) => s.done).length;
 
+  function undo() {
+    if (graceTimer.current) clearTimeout(graceTimer.current);
+    graceTimer.current = null;
+    setGrace(false);
+    setLocalDone(false);
+    setPlaying(false);
+  }
+
   function toggle() {
+    // in the undo window → tapping the check again cancels it
+    if (grace) {
+      undo();
+      return;
+    }
     const goingDone = !done;
+
     if (goingDone) {
       if (checkRef.current) burstFrom(checkRef.current, 22);
       setPlaying(true);
       if (playTimer.current) clearTimeout(playTimer.current);
       playTimer.current = setTimeout(() => setPlaying(false), 650);
+      setLocalDone(true);
+      setGrace(true);
+      graceTimer.current = setTimeout(() => commit.current(), GRACE_MS);
+      return;
     }
 
-    if (typeof navigator !== "undefined" && !navigator.onLine) {
-      if (goingDone) {
-        enqueue({ type: "complete", todoId: todo.id });
-        setQueuedDone(true);
-      }
-      return; // no reopen offline
-    }
-
-    start(async () => {
-      setOptDone(goingDone);
-      await (goingDone ? completeTodo(todo.id) : reopenTodo(todo.id));
-    });
+    // reopening (only happens for already-committed done rows)
+    if (typeof navigator !== "undefined" && !navigator.onLine) return;
+    setLocalDone(false);
+    start(() => reopenTodo(todo.id));
   }
 
   return (
@@ -106,6 +147,14 @@ export default function TodoRow({
         ) : (
           <div className="title">{todo.title}</div>
         )}
+        {grace ? (
+          <div className="undo-row">
+            <button className="undo-link" onClick={undo}>
+              Undo
+            </button>
+            <span className="undo-bar" aria-hidden />
+          </div>
+        ) : (
         <div className="meta">
           {overdue && <span className="chip overdue">overdue</span>}
           {dueToday && <span className="chip today">due today</span>}
@@ -147,6 +196,7 @@ export default function TodoRow({
             </>
           )}
         </div>
+        )}
 
         {openSubs && subs.length > 0 && (
           <ul className="subs-list">

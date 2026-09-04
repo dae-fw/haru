@@ -579,6 +579,34 @@ button.title-edit {
   align-items: center;
   flex-wrap: wrap;
 }
+/* undo grace window on complete */
+.undo-row {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.undo-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.undo-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform-origin: left;
+  animation: undo-drain 5s linear forwards;
+}
+@keyframes undo-drain {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
 /* snap-a-note */
 .snap {
   display: flex;
