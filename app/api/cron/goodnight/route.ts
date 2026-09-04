@@ -58,11 +58,7 @@ async function handler(req: Request) {
 
   const ideas = (ideaRaw ?? []) as Idea[];
   const ctx: PlanContext = {
-    mode: "night",
     todos: (openRaw ?? []) as Todo[],
-    projects: [],
-    events: [],
-    googleConnected: false,
     tz,
     doneToday: (doneRaw ?? []) as Todo[],
     staleIdea: ideas.length ? ideas[Math.floor(Math.random() * ideas.length)] : null,
@@ -80,7 +76,7 @@ async function handler(req: Request) {
   const { sent, stale } = await sendPush(subs, {
     title: "Goodnight",
     body,
-    url: "/plan",
+    url: "/organize?m=tomorrow",
     tag: "haru-goodnight",
   });
   if (stale.length) await admin.from("haru_push_subs").delete().in("endpoint", stale);

@@ -2,7 +2,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { syncGoogleTasks } from "@/lib/google";
 import { todayISO } from "@/lib/recurrence";
-import type { Idea, Project, Reference, Todo } from "@/lib/types";
+import type { Idea, Project, Todo } from "@/lib/types";
 
 // cache() dedupes within a single request — the (app) layout and the page
 // can both call getOpenTodos() and it runs one query.
@@ -65,15 +65,6 @@ export const getIdeas = cache(async (): Promise<Idea[]> => {
     .select("*")
     .order("created_at", { ascending: false });
   return (data as Idea[]) ?? [];
-});
-
-export const getReference = cache(async (): Promise<Reference[]> => {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("haru_reference")
-    .select("*")
-    .order("updated_at", { ascending: false });
-  return (data as Reference[]) ?? [];
 });
 
 export interface Prefs {

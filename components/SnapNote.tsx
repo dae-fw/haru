@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { addIdea, addTodo, saveReferenceFields } from "@/app/(app)/actions";
+import { addIdea, addTodo } from "@/app/(app)/actions";
 import type { Project } from "@/lib/types";
 
-type Kind = "todo" | "idea" | "reference";
+type Kind = "todo" | "idea";
 
 interface Read {
   text: string;
@@ -92,8 +92,6 @@ export default function SnapNote({ projects }: { projects: Project[] }) {
         fd.set("title", body);
         if (projectId) fd.set("project_id", projectId);
         await addTodo(fd);
-      } else if (kind === "reference") {
-        await saveReferenceFields({ body });
       } else {
         const fd = new FormData();
         fd.set("body", body);
@@ -157,30 +155,20 @@ export default function SnapNote({ projects }: { projects: Project[] }) {
           {read.kind === "todo" && read.projectName && (
             <div className="snap-hint">Looks like a task for {read.projectName}.</div>
           )}
-          {read.kind === "reference" && (
-            <div className="snap-hint">Looks like a detail worth keeping.</div>
-          )}
           <div className="snap-actions">
             <button
               className={`btn${read.kind === "idea" ? " primary" : ""}`}
               disabled={saving}
               onClick={() => file("idea")}
             >
-              Idea
+              Keep as idea
             </button>
             <button
               className={`btn${read.kind === "todo" ? " primary" : ""}`}
               disabled={saving}
               onClick={() => file("todo")}
             >
-              Todo
-            </button>
-            <button
-              className={`btn${read.kind === "reference" ? " primary" : ""}`}
-              disabled={saving}
-              onClick={() => file("reference")}
-            >
-              Reference
+              Add as todo
             </button>
           </div>
           <button className="linkish" onClick={() => setRead(null)}>

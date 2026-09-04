@@ -1,8 +1,7 @@
 import { requireUser } from "@/lib/auth";
-import { getIdeas, getProjects, getReference } from "@/lib/data";
+import { getIdeas, getProjects } from "@/lib/data";
 import AddIdea from "@/components/AddIdea";
 import SnapNote from "@/components/SnapNote";
-import ReferenceList from "@/components/ReferenceList";
 import IdeaRow from "@/components/IdeaRow";
 import Gear from "@/components/Gear";
 
@@ -10,11 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CapturePage() {
   await requireUser();
-  const [ideas, projects, reference] = await Promise.all([
-    getIdeas(),
-    getProjects(),
-    getReference(),
-  ]);
+  const [ideas, projects] = await Promise.all([getIdeas(), getProjects()]);
 
   return (
     <>
@@ -40,8 +35,6 @@ export default async function CapturePage() {
             )}
           </div>
         </div>
-
-        <ReferenceList items={reference} />
       </div>
     </>
   );

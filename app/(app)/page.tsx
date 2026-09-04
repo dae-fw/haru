@@ -18,7 +18,6 @@ import QueuedTasks from "@/components/QueuedTasks";
 import EarlierToday from "@/components/EarlierToday";
 import Horizon from "@/components/Horizon";
 import AddEventButton from "@/components/AddEventButton";
-import PlanLink from "@/components/PlanLink";
 import Gear from "@/components/Gear";
 import type { Project, Todo } from "@/lib/types";
 
@@ -320,8 +319,7 @@ export default async function TodayPage() {
           tz={tz}
         />
 
-        <PlanLink />
-        <a href="/review" className="linkish" style={{ display: "block", marginTop: 10, textAlign: "center" }}>
+        <a href="/review" className="cta">
           Week in review →
         </a>
       </div>

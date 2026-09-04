@@ -430,46 +430,6 @@ select {
   border-radius: var(--radius);
   padding: 11px 13px;
   position: relative;
-  overflow: hidden;
-}
-/* swipe: the content rides on .row-inner, action cues sit behind it */
-.row-inner {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  width: 100%;
-  background: var(--surface);
-  position: relative;
-  z-index: 1;
-  touch-action: pan-y;
-}
-.swipe-cue {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 72px;
-  display: flex;
-  align-items: center;
-  font-size: 1.05rem;
-  z-index: 0;
-  opacity: 0.4;
-  transition: transform 0.15s ease, opacity 0.15s ease;
-}
-.swipe-cue.left {
-  left: 0;
-  justify-content: flex-start;
-  padding-left: 20px;
-  color: var(--good, #2f9e44);
-}
-.swipe-cue.right {
-  right: 0;
-  justify-content: flex-end;
-  padding-right: 20px;
-  color: var(--accent);
-}
-.swipe-cue.armed {
-  opacity: 1;
-  transform: scale(1.3);
 }
 .row.past {
   opacity: 0.5;
@@ -647,27 +607,156 @@ button.title-edit {
   flex-wrap: wrap;
   gap: 8px;
 }
-.ref-locked {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  border: 1px dashed var(--hair);
-  border-radius: var(--radius);
-  padding: 18px;
-  color: var(--ink-soft);
-  font-size: 0.9rem;
-}
-.ref-lockbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--hair);
-}
 .snap-btn.ghost {
   border-style: solid;
+}
+
+/* ---- Organize ---- */
+.org-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.org-mode {
+  display: block;
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  padding: 16px 16px;
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+}
+.org-mode.off {
+  opacity: 0.45;
+}
+.org-mode-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.org-count {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.org-hint {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin-top: 3px;
+}
+.org-wrap {
+  max-width: 380px;
+  margin: 0 auto;
+}
+.org-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.org-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-2, var(--hair));
+  overflow: hidden;
+}
+.org-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+.org-card {
+  border: 1px solid var(--hair);
+  border-radius: 16px;
+  padding: 20px 18px;
+  background: var(--surface);
+}
+.org-state {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+.org-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 3px;
+}
+.org-proj {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin-top: 6px;
+}
+.org-when-lbl {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  margin: 18px 0 8px;
+}
+.org-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.org-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.org-actions .btn,
+.org-grid .btn {
+  flex: 1 1 auto;
+  padding: 11px 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.btn.danger {
+  color: var(--crit);
+  border-color: var(--crit);
+}
+.org-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.org-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  background: var(--surface);
+  cursor: pointer;
+}
+.org-done {
+  max-width: 340px;
+  margin: 8vh auto 0;
+  text-align: center;
+}
+.org-done-mark {
+  font-size: 2rem;
+  color: var(--good);
+}
+.org-done-t {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.org-done-line {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin: 10px 0 20px;
 }
 .snap-err {
   font-size: 0.8rem;
@@ -977,14 +1066,6 @@ button.title-edit {
 .idea .i-body {
   font-size: 0.9rem;
   white-space: pre-wrap;
-}
-.idea .i-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--ink-soft);
-  margin-bottom: 3px;
 }
 .idea .i-meta {
   margin-top: 8px;

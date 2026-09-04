@@ -31,12 +31,10 @@ export async function POST(req: Request) {
       system: `You transcribe text from a photo and classify it.
 Known projects: ${names.length ? names.join(", ") : "(none)"}.
 Return ONLY minified JSON, no prose, no code fence:
-{"text": string, "kind": "todo" | "idea" | "reference", "project": string | null}
+{"text": string, "kind": "todo" | "idea", "project": string | null}
 - "text" is ALL readable text in the image, transcribed faithfully. Fix only obvious
   OCR slips; keep line breaks. If you truly cannot read any text, set "text" to "".
-- "kind": "todo" for a clear actionable task; "reference" for a durable fact to keep
-  (numbers, dates, addresses, account/spec details, anything you'd look up later);
-  "idea" for anything else.
+- "kind": "todo" for a clear actionable task; "idea" for anything else.
 - "project" is one of the known project names if it clearly belongs there, else null.`,
       messages: [
         {
@@ -81,9 +79,7 @@ Return ONLY minified JSON, no prose, no code fence:
     return Response.json({ error: "empty" }, { status: 422 });
   }
 
-  const kind = ["todo", "reference", "idea"].includes(parsed.kind ?? "")
-    ? (parsed.kind as "todo" | "reference" | "idea")
-    : "idea";
+  const kind = parsed.kind === "todo" ? "todo" : "idea";
   const match = parsed.project
     ? projects.find((p) => p.name.toLowerCase() === parsed.project!.toLowerCase())
     : undefined;

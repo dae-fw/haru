@@ -326,50 +326,6 @@ export async function deleteTodo(id: string) {
   revalidateAll();
 }
 
-// ---------- Reference notes (permanent facts for the chat) ----------
-
-export async function addReference(formData: FormData) {
-  const { user, supabase } = await requireUser();
-  const label = String(formData.get("label") ?? "").trim() || null;
-  const body = String(formData.get("body") ?? "").trim();
-  if (!body) return;
-  await supabase.from("haru_reference").insert({ user_id: user.id, label, body });
-  revalidateAll();
-}
-
-/** Plain-args create — used by the chat's save_reference tool. */
-export async function saveReferenceFields(input: { label?: string | null; body: string }) {
-  const { user, supabase } = await requireUser();
-  const body = input.body.trim();
-  if (!body) return;
-  await supabase
-    .from("haru_reference")
-    .insert({ user_id: user.id, label: input.label?.trim() || null, body });
-  revalidateAll();
-}
-
-export async function updateReference(
-  id: string,
-  patch: { label?: string | null; body?: string },
-) {
-  const { supabase } = await requireUser();
-  const update: Record<string, unknown> = {};
-  if (patch.label !== undefined) update.label = patch.label?.trim() || null;
-  if (patch.body !== undefined) {
-    const b = patch.body.trim();
-    if (b) update.body = b;
-  }
-  if (Object.keys(update).length === 0) return;
-  await supabase.from("haru_reference").update(update).eq("id", id);
-  revalidateAll();
-}
-
-export async function deleteReference(id: string) {
-  const { supabase } = await requireUser();
-  await supabase.from("haru_reference").delete().eq("id", id);
-  revalidateAll();
-}
-
 export async function promoteIdea(id: string) {
   const { user, supabase } = await requireUser();
   const { data: idea } = await supabase
