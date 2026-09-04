@@ -157,16 +157,41 @@ export default async function TodayPage() {
     )
     .sort(sortByDue);
 
+  // ---- merged timeline: timed tasks + calendar events, in one clock stream ----
+  const hm = (d: Date) =>
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: tz,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(d);
+  const nowHM = hm(new Date());
+
   const pastEvents = events
     .filter((e) => !e.allDay && new Date(e.end).getTime() < now)
     .sort((a, b) => a.start.localeCompare(b.start));
-  const upcomingEvents = events
-    .filter((e) => e.allDay || new Date(e.end).getTime() >= now)
-    .sort((a, b) => (a.allDay ? -1 : 0) - (b.allDay ? -1 : 0) || a.start.localeCompare(b.start));
+  const upcomingEvents = events.filter(
+    (e) => e.allDay || new Date(e.end).getTime() >= now,
+  );
+
+  const timed = rest.filter((t) => t.due_time);
+  const untimed = rest.filter((t) => !t.due_time);
+  const lateTimed = timed
+    .filter((t) => t.due_time! < nowHM)
+    .sort((a, b) => a.due_time!.localeCompare(b.due_time!));
+  const upcomingTimed = timed.filter((t) => t.due_time! >= nowHM);
+
+  type Slot = { at: string; ev?: (typeof events)[number]; todo?: Todo };
+  const stream: Slot[] = [
+    ...upcomingEvents.map(
+      (e): Slot => ({ at: e.allDay ? "00:00" : hm(new Date(e.start)), ev: e }),
+    ),
+    ...upcomingTimed.map((t): Slot => ({ at: t.due_time!, todo: t })),
+  ].sort((a, b) => a.at.localeCompare(b.at) || (a.ev && !b.ev ? -1 : b.ev ? 1 : 0));
 
   // past events + tasks done today collapse into <EarlierToday>; overdue stays visible.
-  const above = overdue.length;
-  const below = upcomingEvents.length + rest.length;
+  const above = overdue.length + lateTimed.length;
+  const below = stream.length + untimed.length;
 
   const name = displayName(
     (user.user_metadata?.nickname as string | undefined) ??
@@ -238,6 +263,15 @@ export default async function TodayPage() {
                 project={t.project_id ? byId.get(t.project_id) : undefined}
               />
             ))}
+            {lateTimed.map((t) => (
+              <TodoRow
+                key={t.id}
+                todo={t}
+                projects={projects}
+                project={t.project_id ? byId.get(t.project_id) : undefined}
+                hint="late"
+              />
+            ))}
             {above > 0 && below > 0 && (
               <div className="now-line">
                 <span className="rule" />
@@ -245,10 +279,29 @@ export default async function TodayPage() {
                 <span className="rule" />
               </div>
             )}
-            {upcomingEvents.map((e) => (
-              <EventRow key={e.id} event={e} tz={tz} />
-            ))}
-            {rest.map((t) => (
+            {stream.map((s) =>
+              s.ev ? (
+                <EventRow key={s.ev.id} event={s.ev} tz={tz} />
+              ) : (
+                <TodoRow
+                  key={s.todo!.id}
+                  todo={s.todo!}
+                  projects={projects}
+                  project={s.todo!.project_id ? byId.get(s.todo!.project_id) : undefined}
+                  hint={
+                    rank(s.todo!, today, eventProjects) === 2 ? "meeting today" : undefined
+                  }
+                />
+              ),
+            )}
+            {untimed.length > 0 && (
+              <div className="now-line anytime">
+                <span className="rule" />
+                <span className="lbl">anytime</span>
+                <span className="rule" />
+              </div>
+            )}
+            {untimed.map((t) => (
               <TodoRow
                 key={t.id}
                 todo={t}

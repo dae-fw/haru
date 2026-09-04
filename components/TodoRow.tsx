@@ -158,8 +158,8 @@ export default function TodoRow({
         <div className="meta">
           {overdue && <span className="chip overdue">overdue</span>}
           {dueToday && <span className="chip today">due today</span>}
-          {!done && hint && !overdue && !dueToday && (
-            <span className="chip">{hint}</span>
+          {!done && hint && !overdue && (
+            <span className={`chip${hint === "late" ? " overdue" : ""}`}>{hint}</span>
           )}
           {laterLabel && <span className="chip">{laterLabel}</span>}
           {!done && todo.due_time && <span className="chip">{fmt12(todo.due_time)}</span>}

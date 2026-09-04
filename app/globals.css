@@ -420,6 +420,12 @@ select {
   text-transform: uppercase;
   letter-spacing: 0.14em;
 }
+.now-line.anytime .rule {
+  background: var(--hair);
+}
+.now-line.anytime .lbl {
+  color: var(--ink-soft);
+}
 
 .row {
   display: flex;
