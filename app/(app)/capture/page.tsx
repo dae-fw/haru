@@ -25,13 +25,16 @@ export default async function CapturePage() {
         <SnapNote projects={projects} />
 
         <div className="group">
-          <h2>Not sorted yet <span className="count">{ideas.length}</span></h2>
+          <h2>Notes <span className="count">{ideas.length}</span></h2>
+          <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 8 }}>
+            These stay here and out of Organize. Promote one to a todo whenever it&apos;s ready.
+          </div>
           <div className="list">
             {ideas.map((idea) => (
               <IdeaRow key={idea.id} idea={idea} />
             ))}
             {ideas.length === 0 && (
-              <div className="empty">Inbox clear. Jot something when it comes to you.</div>
+              <div className="empty">Nothing here yet. Jot something when it comes to you.</div>
             )}
           </div>
         </div>
