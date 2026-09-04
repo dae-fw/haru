@@ -644,6 +644,52 @@ button.title-edit {
 .snap-btn.ghost {
   border-style: solid;
 }
+.snap-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 10px 0;
+}
+.snap-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.snap-item.off {
+  opacity: 0.4;
+}
+.snap-item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.snap-item-main input {
+  width: 100%;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  padding: 6px 9px;
+  background: var(--surface);
+  font-size: 0.85rem;
+}
+.snap-item-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.snap-item-row select {
+  flex: 1;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  padding: 5px 8px;
+  background: var(--surface);
+  font-size: 0.78rem;
+}
+.seg.tiny button {
+  padding: 4px 10px;
+  font-size: 0.72rem;
+}
 
 /* ---- Organize ---- */
 .org-modes {

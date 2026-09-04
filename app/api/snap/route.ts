@@ -4,6 +4,7 @@ import { getProjects } from "@/lib/data";
 
 const MODEL = "claude-haiku-4-5";
 const OK_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const CAP = 20;
 
 export async function POST(req: Request) {
   await requireUser();
@@ -27,15 +28,16 @@ export async function POST(req: Request) {
   try {
     const res = await client.messages.create({
       model: MODEL,
-      max_tokens: 1500,
-      system: `You transcribe text from a photo and classify it.
+      max_tokens: 2000,
+      system: `You transcribe a photo of notes and split it into separate items.
 Known projects: ${names.length ? names.join(", ") : "(none)"}.
 Return ONLY minified JSON, no prose, no code fence:
-{"text": string, "kind": "todo" | "idea", "project": string | null}
-- "text" is ALL readable text in the image, transcribed faithfully. Fix only obvious
-  OCR slips; keep line breaks. If you truly cannot read any text, set "text" to "".
-- "kind": "todo" for a clear actionable task; "idea" for anything else.
-- "project" is one of the known project names if it clearly belongs there, else null.`,
+{"items": [{"text": string, "kind": "todo" | "idea", "project": string | null}]}
+- One entry per distinct line / bullet / task. A single continuous note is one entry.
+- "text": that item transcribed faithfully; fix only obvious OCR slips.
+- "kind": "todo" for a clear actionable task; otherwise "idea".
+- "project": a known project name if it clearly belongs there, else null.
+- If you cannot read any text, return {"items": []}.`,
       messages: [
         {
           role: "user",
@@ -48,7 +50,7 @@ Return ONLY minified JSON, no prose, no code fence:
                 data: image,
               },
             },
-            { type: "text", text: "Read and classify this note." },
+            { type: "text", text: "Read and split this into items." },
           ],
         },
       ],
@@ -63,31 +65,36 @@ Return ONLY minified JSON, no prose, no code fence:
     return Response.json({ error: "read_failed" }, { status: 502 });
   }
 
-  let parsed: { text?: string; kind?: string; project?: string | null } = {};
+  let parsed: { items?: { text?: string; kind?: string; project?: string | null }[] } = {};
   try {
     parsed = JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/g, ""));
   } catch {
-    // couldn't parse JSON — if the model just returned prose, use it as-is
-    if (raw && !raw.startsWith("{")) {
-      return Response.json({ text: raw, kind: "idea", projectId: null, projectName: null });
-    }
     return Response.json({ error: "read_failed" }, { status: 502 });
   }
 
-  const text = (parsed.text ?? "").trim();
-  if (!text) {
+  const all = (parsed.items ?? [])
+    .map((it) => ({
+      text: (it.text ?? "").trim(),
+      kind: it.kind === "todo" ? ("todo" as const) : ("idea" as const),
+      project: it.project ?? null,
+    }))
+    .filter((it) => it.text);
+
+  if (all.length === 0) {
     return Response.json({ error: "empty" }, { status: 422 });
   }
 
-  const kind = parsed.kind === "todo" ? "todo" : "idea";
-  const match = parsed.project
-    ? projects.find((p) => p.name.toLowerCase() === parsed.project!.toLowerCase())
-    : undefined;
-
-  return Response.json({
-    text,
-    kind,
-    projectId: match?.id ?? null,
-    projectName: match?.name ?? null,
+  const kept = all.slice(0, CAP);
+  const items = kept.map((it) => {
+    const match = it.project
+      ? projects.find((p) => p.name.toLowerCase() === it.project!.toLowerCase())
+      : undefined;
+    return {
+      text: it.text,
+      kind: it.kind,
+      projectId: match?.id ?? null,
+    };
   });
+
+  return Response.json({ items, dropped: all.length - kept.length });
 }
