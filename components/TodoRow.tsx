@@ -165,7 +165,10 @@ export default function TodoRow({
           {!done && todo.due_time && <span className="chip">{fmt12(todo.due_time)}</span>}
           {todo.flagged && <span className="chip flag">★ flagged</span>}
           {todo.recurrence && (
-            <span className="chip">↻ {describeRecurrence(todo.recurrence)}</span>
+            <span className="chip">
+              ↻ {describeRecurrence(todo.recurrence)}
+              {todo.recurrence.paused ? " · paused" : ""}
+            </span>
           )}
           {todo.streak > 0 && <span className="chip streak">{todo.streak}-in-a-row</span>}
           {todo.source === "google_tasks" && (

@@ -5,6 +5,7 @@ export interface Recurrence {
   weekdays?: number[]; // 0 = Sunday .. 6 = Saturday  (weekly)
   dayOfMonth?: number; // 1..31  (monthly)
   n?: number; // every N days  (everyN)
+  paused?: boolean; // stopped generating new instances, config + streak kept
 }
 
 export type TodoStatus = "open" | "done" | "waiting";

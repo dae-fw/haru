@@ -4,7 +4,9 @@ import Portal from "@/components/Portal";
 import { useRef, useState } from "react";
 import {
   parkTodo,
+  pauseRecurrence,
   rescheduleTodo,
+  resumeRecurrence,
   setRecurrence,
   snoozeTodo,
 } from "@/app/(app)/actions";
@@ -186,6 +188,23 @@ export default function RescheduleSheet({
           </div>
         )}
         <div className="wk-sum">{summary}</div>
+
+        {todo.recurrence && (
+          <button
+            className="opt"
+            style={{ color: "var(--accent)" }}
+            disabled={pending}
+            onClick={() =>
+              run(() =>
+                todo.recurrence?.paused
+                  ? resumeRecurrence(todo.id)
+                  : pauseRecurrence(todo.id),
+              )
+            }
+          >
+            {todo.recurrence.paused ? "Resume repeat" : "Pause repeat"}
+          </button>
+        )}
 
         <div className="sheet-actions">
           <button className="btn" onClick={onClose}>Close</button>

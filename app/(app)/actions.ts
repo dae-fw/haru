@@ -121,7 +121,8 @@ export async function completeTodo(id: string) {
     .eq("id", id);
 
   // Recurring -> spawn the next instance, carry the streak forward (+1).
-  if (todo.recurrence) {
+  // A paused recurrence stays put — completing it doesn't regenerate.
+  if (todo.recurrence && !(todo.recurrence as Recurrence).paused) {
     const base = todo.due_date ?? toISODate(new Date());
     await supabase.from("haru_todos").insert({
       user_id: todo.user_id,
@@ -196,6 +197,42 @@ export async function snoozeTodo(id: string, untilISO: string) {
 export async function setRecurrence(id: string, recurrence: Recurrence | null) {
   const { supabase } = await requireUser();
   await supabase.from("haru_todos").update({ recurrence }).eq("id", id);
+  revalidateAll();
+}
+
+/** Stop generating new instances; keep the schedule + streak. */
+export async function pauseRecurrence(id: string) {
+  const { supabase } = await requireUser();
+  const { data } = await supabase.from("haru_todos").select("recurrence").eq("id", id).single();
+  const rec = data?.recurrence as Recurrence | null;
+  if (!rec) return;
+  await supabase
+    .from("haru_todos")
+    .update({ recurrence: { ...rec, paused: true } })
+    .eq("id", id);
+  revalidateAll();
+}
+
+/** Resume; move the due date to the next scheduled occurrence (or today if that's past). */
+export async function resumeRecurrence(id: string) {
+  const { supabase } = await requireUser();
+  const { data } = await supabase
+    .from("haru_todos")
+    .select("recurrence, due_date")
+    .eq("id", id)
+    .single();
+  const rec = data?.recurrence as Recurrence | null;
+  if (!rec) return;
+  const { paused, ...active } = rec;
+  void paused;
+  const todayStr = toISODate(new Date());
+  let d = (data?.due_date as string | null) ?? todayStr;
+  let guard = 0;
+  while (d < todayStr && guard++ < 400) d = nextDueDate(active as Recurrence, d);
+  await supabase
+    .from("haru_todos")
+    .update({ recurrence: active, due_date: d, status: "open" })
+    .eq("id", id);
   revalidateAll();
 }
 
