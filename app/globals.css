@@ -848,14 +848,67 @@ button.title-edit {
   flex: 1;
 }
 
+.all-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 2px;
+}
 .all-search {
-  width: 100%;
+  flex: 1;
   border: 1px solid var(--hair);
   border-radius: 10px;
   padding: 9px 12px;
   background: var(--surface);
   font-size: 0.88rem;
-  margin: 4px 0 2px;
+}
+.check.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.check.on svg {
+  opacity: 1;
+  stroke-dashoffset: 0;
+  stroke: #fff;
+}
+.row.selected {
+  border-color: var(--accent);
+}
+.bulkbar {
+  position: sticky;
+  bottom: 8px;
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px -8px rgba(0, 0, 0, 0.25);
+}
+.bulk-n {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.bulk-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.bulkbar .chip {
+  cursor: pointer;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+.bulkbar .chip.danger {
+  color: var(--crit);
+  border-color: var(--crit);
+}
+.undo-toast {
+  justify-content: space-between;
 }
 .all-filters {
   flex: none;

@@ -109,6 +109,53 @@ export async function addTodoFields(input: {
   }
 }
 
+// ---------- bulk actions (All screen multi-select) ----------
+
+export async function bulkReschedule(ids: string[], dueDate: string) {
+  const { supabase } = await requireUser();
+  if (!ids.length) return;
+  await supabase
+    .from("haru_todos")
+    .update({
+      due_date: dueDate,
+      status: "open",
+      wake_at: null,
+      waiting_on: null,
+      snooze_until: null,
+    })
+    .in("id", ids);
+  revalidateAll();
+}
+
+export async function bulkSetProject(ids: string[], projectId: string | null) {
+  const { supabase } = await requireUser();
+  if (!ids.length) return;
+  await supabase.from("haru_todos").update({ project_id: projectId }).in("id", ids);
+  revalidateAll();
+}
+
+export async function bulkDelete(ids: string[]) {
+  const { supabase } = await requireUser();
+  if (!ids.length) return;
+  await supabase.from("haru_todos").delete().in("id", ids);
+  revalidateAll();
+}
+
+/** Complete each (spawns recurrences, writes back to Google) — used with a batch undo. */
+export async function bulkComplete(ids: string[]) {
+  for (const id of ids) await completeTodo(id);
+}
+
+export async function bulkReopen(ids: string[]) {
+  const { supabase } = await requireUser();
+  if (!ids.length) return;
+  await supabase
+    .from("haru_todos")
+    .update({ status: "open", completed_at: null })
+    .in("id", ids);
+  revalidateAll();
+}
+
 export async function completeTodo(id: string) {
   const { supabase } = await requireUser();
   const { data } = await supabase.from("haru_todos").select("*").eq("id", id).single();

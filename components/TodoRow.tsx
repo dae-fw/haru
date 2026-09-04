@@ -31,12 +31,18 @@ export default function TodoRow({
   projects = [],
   showTools = true,
   hint,
+  selectable = false,
+  selected = false,
+  onToggleSelect,
 }: {
   todo: Todo;
   project?: Project;
   projects?: Project[];
   showTools?: boolean;
   hint?: string;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const GRACE_MS = 5000;
   const [, start] = useTransition();
@@ -128,19 +134,35 @@ export default function TodoRow({
   }
 
   return (
-    <li className={`row${done ? " done" : ""}${playing ? " playing" : ""}`}>
+    <li
+      className={`row${done ? " done" : ""}${playing ? " playing" : ""}${
+        selectable && selected ? " selected" : ""
+      }`}
+    >
       <button
         ref={checkRef}
-        className="check"
-        aria-label={done ? "Reopen task" : "Complete task"}
-        onClick={toggle}
+        className={`check${selectable && selected ? " on" : ""}`}
+        aria-label={
+          selectable
+            ? selected
+              ? "Deselect"
+              : "Select"
+            : done
+              ? "Reopen task"
+              : "Complete task"
+        }
+        onClick={selectable ? onToggleSelect : toggle}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 12l6 6L20 6" />
         </svg>
       </button>
       <div className="main">
-        {showTools && !done ? (
+        {selectable ? (
+          <button className="title title-edit" onClick={onToggleSelect}>
+            {todo.title}
+          </button>
+        ) : showTools && !done ? (
           <button className="title title-edit" onClick={() => setEdit(true)}>
             {todo.title}
           </button>
