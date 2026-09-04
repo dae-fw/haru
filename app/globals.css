@@ -842,6 +842,15 @@ button.title-edit {
   flex: 1;
 }
 
+.all-search {
+  width: 100%;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  padding: 9px 12px;
+  background: var(--surface);
+  font-size: 0.88rem;
+  margin: 4px 0 2px;
+}
 .all-filters {
   flex: none;
   display: flex;
