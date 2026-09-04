@@ -1,3 +1,11 @@
+export const REMINDER_OPTIONS: { min: number; label: string }[] = [
+  { min: 0, label: "At the time" },
+  { min: 10, label: "10 min before" },
+  { min: 30, label: "30 min before" },
+  { min: 60, label: "1 hour before" },
+  { min: 1440, label: "1 day before" },
+];
+
 export type RecurrenceType = "weekly" | "monthly" | "everyN";
 
 export interface Recurrence {
@@ -31,6 +39,8 @@ export interface Todo {
   notes: string | null;
   due_date: string | null; // yyyy-mm-dd
   due_time: string | null; // "HH:MM" 24h
+  reminder_min: number | null; // minutes before due to push; null = no reminder
+  reminder_sent: boolean;
   status: TodoStatus;
   flagged: boolean;
   recurrence: Recurrence | null;

@@ -4,7 +4,7 @@ import Portal from "@/components/Portal";
 import { useState, useTransition } from "react";
 import { deleteTodo, demoteToIdea, updateTodo } from "@/app/(app)/actions";
 import { todayISO } from "@/lib/recurrence";
-import type { Project, Subtask, Todo } from "@/lib/types";
+import { REMINDER_OPTIONS, type Project, type Subtask, type Todo } from "@/lib/types";
 
 export default function EditTodoSheet({
   todo,
@@ -20,6 +20,7 @@ export default function EditTodoSheet({
   const [due, setDue] = useState(todo.due_date ?? "");
   const [dueTime, setDueTime] = useState(todo.due_time ?? "");
   const [flagged, setFlagged] = useState(todo.flagged);
+  const [reminder, setReminder] = useState<number | null>(todo.reminder_min);
   const [notes, setNotes] = useState(todo.notes ?? "");
   const [subs, setSubs] = useState<Subtask[]>(todo.subtasks ?? []);
   const [newSub, setNewSub] = useState("");
@@ -43,6 +44,7 @@ export default function EditTodoSheet({
         project_id: projectId || null,
         due_date: effectiveDue || null,
         due_time: effectiveDue ? dueTime || null : null,
+        reminder_min: effectiveDue ? reminder : null,
         flagged,
         notes,
         subtasks: subs,
@@ -120,6 +122,31 @@ export default function EditTodoSheet({
           <div style={{ fontSize: "0.76rem", color: "var(--ink-soft)", marginTop: 4 }}>
             No date set — this will be due today.
           </div>
+        )}
+
+        {(due || dueTime) && (
+          <>
+            <label className="sec">Remind me</label>
+            <select
+              style={field}
+              value={reminder == null ? "" : String(reminder)}
+              onChange={(e) =>
+                setReminder(e.target.value === "" ? null : Number(e.target.value))
+              }
+            >
+              <option value="">No reminder</option>
+              {REMINDER_OPTIONS.map((o) => (
+                <option key={o.min} value={o.min}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            {reminder != null && !dueTime && (
+              <div style={{ fontSize: "0.76rem", color: "var(--ink-soft)", marginTop: 4 }}>
+                No time set — reminder is measured from 9:00 AM.
+              </div>
+            )}
+          </>
         )}
 
         <label className="sec" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>

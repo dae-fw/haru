@@ -312,6 +312,7 @@ export async function updateTodo(
     flagged?: boolean;
     notes?: string | null;
     subtasks?: { id: string; title: string; done: boolean }[];
+    reminder_min?: number | null;
   },
 ) {
   const { supabase } = await requireUser();
@@ -323,9 +324,22 @@ export async function updateTodo(
   if (patch.project_id !== undefined) update.project_id = patch.project_id || null;
   if (patch.due_date !== undefined) {
     update.due_date = patch.due_date || null;
-    if (!patch.due_date) update.due_time = null; // no date -> no time
+    if (!patch.due_date) {
+      update.due_time = null; // no date -> no time
+      update.reminder_min = null; // ...and no reminder
+    }
   }
   if (patch.due_time !== undefined) update.due_time = patch.due_time || null;
+  if (patch.reminder_min !== undefined)
+    update.reminder_min = patch.reminder_min == null ? null : patch.reminder_min;
+  // any schedule change re-arms the reminder
+  if (
+    patch.due_date !== undefined ||
+    patch.due_time !== undefined ||
+    patch.reminder_min !== undefined
+  ) {
+    update.reminder_sent = false;
+  }
   if (patch.flagged !== undefined) update.flagged = patch.flagged;
   if (patch.subtasks !== undefined) {
     update.subtasks = patch.subtasks
