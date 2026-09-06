@@ -49,8 +49,7 @@ export interface Todo {
   waiting_on: string | null;
   snooze_until: string | null;
   subtasks: Subtask[];
-  source: "app" | "capture" | "google_tasks";
-  google_tasks_id: string | null;
+  source: "app" | "capture";
   completed_at: string | null;
   created_at: string;
 }
@@ -60,5 +59,6 @@ export interface Idea {
   body: string;
   project_id: string | null;
   theme: string | null;
+  sorted: boolean;
   created_at: string;
 }

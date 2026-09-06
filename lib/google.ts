@@ -8,12 +8,9 @@ const CAL_BASE = `${CAL_API}/calendars/primary`; // create/update land on the pr
 export const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/calendar.events",
   "https://www.googleapis.com/auth/calendar.readonly",
-  "https://www.googleapis.com/auth/tasks",
   "openid",
   "email",
 ].join(" ");
-
-const TASKS_BASE = "https://tasks.googleapis.com/tasks/v1/lists/@default/tasks";
 
 export interface CalEvent {
   id: string;
@@ -246,99 +243,3 @@ export async function updateCalendarEvent(
 /** @deprecated use updateCalendarEvent */
 export const moveCalendarEvent = (id: string, input: { start: string; end: string }) =>
   updateCalendarEvent(id, input);
-
-// ---------- Google Tasks (two-way, per the build brief) ----------
-
-interface GTask {
-  id: string;
-  title?: string;
-  due?: string; // RFC3339, date at 00:00:00Z
-  status?: "needsAction" | "completed";
-}
-
-/** Import any new open Google Tasks as todos. Import only — never writes back here. */
-export const syncGoogleTasks = cache(async (): Promise<void> => {
-  if (!CONFIGURED) return;
-  const token = await accessToken();
-  if (!token) return;
-
-  const res = await fetch(
-    `${TASKS_BASE}?showCompleted=false&showHidden=false&maxResults=100`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  );
-  if (!res.ok) return; // 403 = the tasks scope hasn't been granted yet — just skip
-  const json = (await res.json()) as { items?: GTask[] };
-  const items = (json.items ?? []).filter((t) => t.title?.trim());
-  if (!items.length) return;
-
-  const supabase = await createClient();
-  // Any row already linked to a Google task — whether we imported it or pushed it —
-  // so a task Haru created and mirrored out doesn't get re-imported as a duplicate.
-  const { data: existing } = await supabase
-    .from("haru_todos")
-    .select("google_tasks_id")
-    .not("google_tasks_id", "is", null);
-  const have = new Set((existing ?? []).map((r) => r.google_tasks_id as string));
-
-  const toInsert = items
-    .filter((t) => !have.has(t.id))
-    .map((t) => ({
-      title: t.title!.trim(),
-      due_date: t.due ? t.due.slice(0, 10) : null,
-      status: "open" as const,
-      source: "google_tasks" as const,
-      google_tasks_id: t.id,
-    }));
-  if (toInsert.length) await supabase.from("haru_todos").insert(toInsert);
-});
-
-/** Push a Haru-created todo out to Google Tasks. Returns the new task id, or null. */
-export async function createGoogleTask(input: {
-  title: string;
-  dueDate?: string | null;
-}): Promise<string | null> {
-  if (!CONFIGURED) return null;
-  const token = await accessToken();
-  if (!token) return null;
-  const body: Record<string, unknown> = { title: input.title };
-  if (input.dueDate) body.due = `${input.dueDate}T00:00:00.000Z`;
-  const res = await fetch(TASKS_BASE, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  }).catch(() => null);
-  if (!res || !res.ok) return null;
-  const task = (await res.json()) as GTask;
-  return task.id ?? null;
-}
-
-/** Keep a linked Google task's title / due date in step with edits made in Haru. */
-export async function updateGoogleTask(
-  taskId: string,
-  patch: { title?: string; dueDate?: string | null },
-): Promise<void> {
-  const token = await accessToken();
-  if (!token) return;
-  const body: Record<string, unknown> = {};
-  if (patch.title !== undefined) body.title = patch.title;
-  if (patch.dueDate !== undefined) {
-    body.due = patch.dueDate ? `${patch.dueDate}T00:00:00.000Z` : null;
-  }
-  if (Object.keys(body).length === 0) return;
-  await fetch(`${TASKS_BASE}/${encodeURIComponent(taskId)}`, {
-    method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  }).catch(() => {});
-}
-
-/** Mark the linked Google Task complete when its imported todo is completed here. Never deletes. */
-export async function completeGoogleTask(taskId: string): Promise<void> {
-  const token = await accessToken();
-  if (!token) return;
-  await fetch(`${TASKS_BASE}/${encodeURIComponent(taskId)}`, {
-    method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ status: "completed" }),
-  }).catch(() => {});
-}

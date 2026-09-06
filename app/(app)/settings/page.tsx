@@ -64,11 +64,8 @@ export default async function SettingsPage({
           {gConnected ? (
             <>
               <p style={{ marginBottom: 8 }}>
-                Connected. Calendar events show on Today, and new Google Tasks import
-                automatically (completing one here marks it done in Google — never deleted).
-              </p>
-              <p style={{ marginBottom: 8, fontSize: "0.78rem", color: "var(--ink-soft)" }}>
-                If Tasks aren&apos;t syncing, reconnect once to grant the Tasks permission.
+                Connected. Calendar events across your calendars show on Today
+                (view-only — edit them in Google Calendar).
               </p>
               <div style={{ display: "flex", gap: 8 }}>
                 <a className="btn" href="/connect/google">
@@ -89,7 +86,7 @@ export default async function SettingsPage({
                   ? "Connection failed — try again."
                   : sp.gcal === "norefresh"
                     ? "Google didn't return a refresh token. Remove Haru at myaccount.google.com/permissions, then reconnect."
-                    : "Calendar on Today, Google Tasks imported automatically, and Plan can create / move events."}
+                    : "Show your Google Calendar events on Today."}
               </p>
               <a className="btn primary" href="/connect/google">
                 Connect Google

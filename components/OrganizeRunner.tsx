@@ -4,8 +4,11 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   completeTodo,
+  deleteIdea,
   deleteTodo,
+  keepIdea,
   parkTodo,
+  promoteIdea,
   rescheduleTodo,
   updateTodo,
 } from "@/app/(app)/actions";
@@ -75,7 +78,54 @@ export default function OrganizeRunner({
     );
   }
 
-  const todo = item.todo;
+  const progress = (
+    <div className="org-progress">
+      <div className="org-bar">
+        <span style={{ width: `${(i / items.length) * 100}%` }} />
+      </div>
+      <span className="org-count">
+        {i + 1} of {items.length}
+      </span>
+    </div>
+  );
+
+  if (item.kind === "idea") {
+    const idea = item.idea!;
+    return (
+      <div className="org-wrap">
+        {progress}
+        <div className="org-card">
+          <div className="org-state">jotted thought</div>
+          <div className="org-title">{idea.body}</div>
+          <div className="org-actions">
+            <button
+              className="btn primary"
+              disabled={pending}
+              onClick={() => run("→ todo", () => promoteIdea(idea.id))}
+            >
+              Make a todo
+            </button>
+            <button
+              className="btn"
+              disabled={pending}
+              onClick={() => run("kept", () => keepIdea(idea.id))}
+            >
+              Keep as note
+            </button>
+            <button
+              className="btn danger"
+              disabled={pending}
+              onClick={() => run("deleted", () => deleteIdea(idea.id))}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const todo = item.todo!;
   const projName = todo.project_id
     ? projects.find((p) => p.id === todo.project_id)?.name ?? "—"
     : null;
@@ -91,14 +141,7 @@ export default function OrganizeRunner({
 
   return (
     <div className="org-wrap">
-      <div className="org-progress">
-        <div className="org-bar">
-          <span style={{ width: `${(i / items.length) * 100}%` }} />
-        </div>
-        <span className="org-count">
-          {i + 1} of {items.length}
-        </span>
-      </div>
+      {progress}
 
       <div className="org-card">
         <div className="org-state">{stateLine}</div>

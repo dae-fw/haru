@@ -202,9 +202,6 @@ export default function TodoRow({
             </span>
           )}
           {todo.streak > 0 && <span className="chip streak">{todo.streak}-in-a-row</span>}
-          {todo.source === "google_tasks" && (
-            <span className="chip">from Google Tasks</span>
-          )}
           {subs.length > 0 && (
             <button
               className={`chip subs-chip${openSubs ? " on" : ""}`}

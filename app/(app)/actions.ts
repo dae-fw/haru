@@ -1,16 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { nextDueDate, toISODate } from "@/lib/recurrence";
-import {
-  completeGoogleTask,
-  createCalendarEvent,
-  createGoogleTask,
-  updateCalendarEvent,
-  updateGoogleTask,
-} from "@/lib/google";
+import { createCalendarEvent, updateCalendarEvent } from "@/lib/google";
 import type { Recurrence, Todo } from "@/lib/types";
 
 function revalidateAll() {
@@ -43,75 +36,19 @@ export async function addTodo(formData: FormData) {
     }
   }
 
-  const { data: inserted } = await supabase
-    .from("haru_todos")
-    .insert({
-      user_id: user.id,
-      title,
-      project_id: projectId,
-      due_date: due,
-      due_time: due ? dueTime : null,
-      notes,
-      reminder_min: Number.isFinite(reminderMin) ? reminderMin : null,
-      flagged,
-      recurrence,
-    })
-    .select("id")
-    .single();
+  await supabase.from("haru_todos").insert({
+    user_id: user.id,
+    title,
+    project_id: projectId,
+    due_date: due,
+    due_time: due ? dueTime : null,
+    notes,
+    reminder_min: Number.isFinite(reminderMin) ? reminderMin : null,
+    flagged,
+    recurrence,
+  });
 
   revalidateAll();
-
-  // Mirror it out to Google Tasks after the response — never blocks the add.
-  if (inserted?.id) {
-    after(async () => {
-      const gid = await createGoogleTask({ title, dueDate: due });
-      if (gid) {
-        await supabase
-          .from("haru_todos")
-          .update({ google_tasks_id: gid })
-          .eq("id", inserted.id);
-      }
-    });
-  }
-}
-
-/** Plain-args todo create — used by the Plan chat's add_todo tool. */
-export async function addTodoFields(input: {
-  title: string;
-  dueDate?: string | null;
-  projectId?: string | null;
-  flagged?: boolean;
-}) {
-  const { user, supabase } = await requireUser();
-  const title = input.title.trim();
-  if (!title) return;
-  const due = input.dueDate || null;
-
-  const { data: inserted } = await supabase
-    .from("haru_todos")
-    .insert({
-      user_id: user.id,
-      title,
-      project_id: input.projectId || null,
-      due_date: due,
-      flagged: !!input.flagged,
-    })
-    .select("id")
-    .single();
-
-  revalidateAll();
-
-  if (inserted?.id) {
-    after(async () => {
-      const gid = await createGoogleTask({ title, dueDate: due });
-      if (gid) {
-        await supabase
-          .from("haru_todos")
-          .update({ google_tasks_id: gid })
-          .eq("id", inserted.id);
-      }
-    });
-  }
 }
 
 // ---------- bulk actions (All screen multi-select) ----------
@@ -175,23 +112,28 @@ export async function completeTodo(id: string) {
   // Recurring -> spawn the next instance, carry the streak forward (+1).
   // A paused recurrence stays put — completing it doesn't regenerate.
   if (todo.recurrence && !(todo.recurrence as Recurrence).paused) {
-    const base = todo.due_date ?? toISODate(new Date());
+    const rec = todo.recurrence as Recurrence;
+    const todayStr = toISODate(new Date());
+    // advance from this instance's due date; if we finished late, keep
+    // advancing until the next occurrence is on or after today.
+    let nextDue = nextDueDate(rec, todo.due_date ?? todayStr);
+    for (let i = 0; i < 400 && nextDue < todayStr; i++) {
+      nextDue = nextDueDate(rec, nextDue);
+    }
     await supabase.from("haru_todos").insert({
       user_id: todo.user_id,
       title: todo.title,
       project_id: todo.project_id,
       notes: todo.notes,
-      due_date: nextDueDate(todo.recurrence as Recurrence, base),
+      due_date: nextDue,
+      due_time: todo.due_time,
+      reminder_min: todo.reminder_min,
+      reminder_sent: false,
       flagged: todo.flagged,
       recurrence: todo.recurrence,
       streak: (todo.streak ?? 0) + 1,
       source: todo.source,
     });
-  }
-
-  // Writeback: an imported Google Task gets marked complete in Google too (never deleted).
-  if (todo.source === "google_tasks" && todo.google_tasks_id) {
-    await completeGoogleTask(todo.google_tasks_id);
   }
 
   revalidateAll();
@@ -355,25 +297,6 @@ export async function updateTodo(
   if (Object.keys(update).length === 0) return;
   await supabase.from("haru_todos").update(update).eq("id", id);
   revalidateAll();
-
-  // Keep a linked Google task's title / due date in step — after the response.
-  if (update.title !== undefined || update.due_date !== undefined) {
-    after(async () => {
-      const { data: row } = await supabase
-        .from("haru_todos")
-        .select("google_tasks_id")
-        .eq("id", id)
-        .single();
-      if (row?.google_tasks_id) {
-        await updateGoogleTask(row.google_tasks_id as string, {
-          ...(update.title !== undefined ? { title: update.title as string } : {}),
-          ...(update.due_date !== undefined
-            ? { dueDate: (update.due_date as string | null) ?? null }
-            : {}),
-        });
-      }
-    });
-  }
 }
 
 export async function toggleSubtask(todoId: string, subId: string) {
@@ -452,6 +375,13 @@ export async function updateIdea(id: string, body: string) {
   const b = body.trim();
   if (!b) return;
   await supabase.from("haru_ideas").update({ body: b }).eq("id", id);
+  revalidateAll();
+}
+
+/** "Keep as note" from Organize's Thoughts pass — stop asking about it. */
+export async function keepIdea(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("haru_ideas").update({ sorted: true }).eq("id", id);
   revalidateAll();
 }
 

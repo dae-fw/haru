@@ -358,10 +358,6 @@ export default async function TodayPage() {
           projects={projects}
           tz={tz}
         />
-
-        <a href="/review" className="cta">
-          Week in review →
-        </a>
       </div>
     </>
   );

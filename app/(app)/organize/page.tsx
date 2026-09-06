@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { getOpenTodos, getProjects } from "@/lib/data";
+import { getIdeas, getOpenTodos, getProjects } from "@/lib/data";
 import { getTimeZone } from "@/lib/tz.server";
 import { todayInTz } from "@/lib/tz";
 import {
@@ -21,20 +21,25 @@ export default async function OrganizePage({
 }) {
   await requireUser();
   const [{ m }, tz] = await Promise.all([searchParams, getTimeZone()]);
-  const [open, projects] = await Promise.all([getOpenTodos(), getProjects()]);
+  const [open, projects, ideas] = await Promise.all([
+    getOpenTodos(),
+    getProjects(),
+    getIdeas(),
+  ]);
   const today = todayInTz(tz);
 
   const counts = {
-    today: organizeQueue("today", open, today).length,
-    tomorrow: organizeQueue("tomorrow", open, today).length,
-    loose: organizeQueue("loose", open, today).length,
+    today: organizeQueue("today", open, ideas, today).length,
+    tomorrow: organizeQueue("tomorrow", open, ideas, today).length,
+    loose: organizeQueue("loose", open, ideas, today).length,
+    thoughts: organizeQueue("thoughts", open, ideas, today).length,
   };
 
   const mode: OrganizeMode | null =
-    m === "today" || m === "tomorrow" || m === "loose" ? m : null;
+    m === "today" || m === "tomorrow" || m === "loose" || m === "thoughts" ? m : null;
 
   if (mode) {
-    const items = organizeQueue(mode, open, today);
+    const items = organizeQueue(mode, open, ideas, today);
     return (
       <>
         <header className="screen-head">
@@ -46,7 +51,9 @@ export default async function OrganizePage({
               ? "What's the plan today"
               : mode === "tomorrow"
                 ? "Set up tomorrow"
-                : "Tidy the loose ends"}
+                : mode === "thoughts"
+                  ? "Sort your thoughts"
+                  : "Tidy the loose ends"}
           </h1>
           <Gear />
         </header>
@@ -67,7 +74,7 @@ export default async function OrganizePage({
     );
   }
 
-  const total = counts.today + counts.tomorrow + counts.loose;
+  const total = counts.today + counts.tomorrow + counts.loose + counts.thoughts;
 
   return (
     <>
@@ -97,6 +104,12 @@ export default async function OrganizePage({
               label="Loose ends"
               count={counts.loose}
               hint="Undated or unfiled tasks"
+            />
+            <ModeButton
+              k="thoughts"
+              label="Thoughts"
+              count={counts.thoughts}
+              hint="Jotted notes to make into todos or keep"
             />
           </div>
         )}

@@ -1,6 +1,5 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { syncGoogleTasks } from "@/lib/google";
 import { todayISO } from "@/lib/recurrence";
 import type { Idea, Project, Todo } from "@/lib/types";
 
@@ -17,8 +16,7 @@ export const getProjects = cache(async (): Promise<Project[]> => {
   return data ?? [];
 });
 
-/** Open + waiting todos, straight from the DB. */
-export const getOpenTodosRaw = cache(async (): Promise<Todo[]> => {
+export const getOpenTodos = cache(async (): Promise<Todo[]> => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("haru_todos")
@@ -27,11 +25,6 @@ export const getOpenTodosRaw = cache(async (): Promise<Todo[]> => {
     .order("due_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
   return (data as Todo[]) ?? [];
-});
-
-export const getOpenTodos = cache(async (): Promise<Todo[]> => {
-  await syncGoogleTasks(); // pull in any new Google Tasks before we read
-  return getOpenTodosRaw();
 });
 
 export const getDoneToday = cache(async (): Promise<Todo[]> => {
@@ -46,24 +39,23 @@ export const getDoneToday = cache(async (): Promise<Todo[]> => {
   return (data as Todo[]) ?? [];
 });
 
-/** Todos completed on or after `startISO` (a timestamp). For the weekly review. */
-export const getDoneSince = cache(async (startISO: string): Promise<Todo[]> => {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("haru_todos")
-    .select("*")
-    .eq("status", "done")
-    .gte("completed_at", startISO)
-    .order("completed_at", { ascending: false });
-  return (data as Todo[]) ?? [];
-});
-
 export const getIdeas = cache(async (): Promise<Idea[]> => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("haru_ideas")
     .select("*")
     .order("created_at", { ascending: false });
+  return (data as Idea[]) ?? [];
+});
+
+/** Just the thoughts Organize hasn't asked about yet. */
+export const getUnsortedIdeas = cache(async (): Promise<Idea[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("haru_ideas")
+    .select("*")
+    .eq("sorted", false)
+    .order("created_at", { ascending: true });
   return (data as Idea[]) ?? [];
 });
 

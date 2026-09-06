@@ -48,8 +48,7 @@ create table if not exists public.haru_todos (
   -- checklist subtasks: [{id, title, done}]
   subtasks        jsonb not null default '[]'::jsonb,
   -- provenance
-  source          text not null default 'app' check (source in ('app', 'capture', 'google_tasks')),
-  google_tasks_id text,
+  source          text not null default 'app' check (source in ('app', 'capture')),
   completed_at    timestamptz,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
@@ -64,6 +63,7 @@ create table if not exists public.haru_ideas (
   body        text not null,
   project_id  uuid references public.haru_projects (id) on delete set null,
   theme       text,
+  sorted      boolean not null default false, -- Organize's Thoughts pass has decided about it
   created_at  timestamptz not null default now()
 );
 

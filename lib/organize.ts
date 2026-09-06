@@ -1,10 +1,12 @@
-import type { Todo } from "@/lib/types";
+import type { Idea, Todo } from "@/lib/types";
 
-export type OrganizeMode = "today" | "tomorrow" | "loose";
+export type OrganizeMode = "today" | "tomorrow" | "loose" | "thoughts";
 
 export interface OrganizeItem {
   id: string;
-  todo: Todo;
+  kind: "todo" | "idea";
+  todo?: Todo;
+  idea?: Idea;
   /** tomorrow mode: this card is an undated task being offered for tomorrow */
   pullIn?: boolean;
   /** loose mode: this task has no project — show project chips */
@@ -29,11 +31,12 @@ export function thisWeekDate(today: string): string {
   return d;
 }
 
-/** Count for the Organize tab badge: undated + no-project open todos. Notes aren't touched. */
-export function looseEndsCount(open: Todo[]): number {
-  return open.filter(
+/** Count for the Organize tab badge: undated + no-project open todos, plus unsorted thoughts. */
+export function looseEndsCount(open: Todo[], unsortedThoughts = 0): number {
+  const stuck = open.filter(
     (t) => isOpen(t) && (t.due_date == null || t.project_id == null),
   ).length;
+  return stuck + unsortedThoughts;
 }
 
 function byTime(a: Todo, b: Todo) {
@@ -43,18 +46,26 @@ function byTime(a: Todo, b: Todo) {
   );
 }
 
-/** Build the card queue for a mode. Notes/ideas are never included — they live in Capture. */
+/** Build the card queue for a mode. */
 export function organizeQueue(
   mode: OrganizeMode,
   open: Todo[],
+  ideas: Idea[],
   today: string,
 ): OrganizeItem[] {
   const tomorrow = addDays(today, 1);
   const t = (todo: Todo, extra: Partial<OrganizeItem> = {}): OrganizeItem => ({
     id: todo.id,
+    kind: "todo",
     todo,
     ...extra,
   });
+
+  if (mode === "thoughts") {
+    return ideas
+      .filter((i) => !i.sorted)
+      .map((i) => ({ id: i.id, kind: "idea" as const, idea: i }));
+  }
 
   if (mode === "today") {
     return open
@@ -78,7 +89,7 @@ export function organizeQueue(
     return [...due, ...undated];
   }
 
-  // loose ends: undated ∪ no-project open todos
+  // loose ends: undated ∪ no-project open todos (tasks only — thoughts have their own pass)
   const seen = new Set<string>();
   const stuck: OrganizeItem[] = [];
   for (const x of open) {
@@ -89,8 +100,8 @@ export function organizeQueue(
     stuck.push(t(x, { needsProject: x.project_id == null }));
   }
   stuck.sort((a, b) => {
-    const an = a.todo.due_date == null ? 0 : 1;
-    const bn = b.todo.due_date == null ? 0 : 1;
+    const an = a.todo!.due_date == null ? 0 : 1;
+    const bn = b.todo!.due_date == null ? 0 : 1;
     return an - bn;
   });
   return stuck;

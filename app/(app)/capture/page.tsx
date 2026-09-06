@@ -27,7 +27,7 @@ export default async function CapturePage() {
         <div className="group">
           <h2>Notes <span className="count">{ideas.length}</span></h2>
           <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 8 }}>
-            These stay here and out of Organize. Promote one to a todo whenever it&apos;s ready.
+            New jots wait here until Organize&apos;s Thoughts pass asks what to do with them.
           </div>
           <div className="list">
             {ideas.map((idea) => (

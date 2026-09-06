@@ -71,6 +71,7 @@ export default function IdeaRow({ idea }: { idea: Idea }) {
       <div className="i-body">{idea.body}</div>
       <div className="i-meta">
         <span>{when}</span>
+        {!idea.sorted && <span style={{ color: "var(--accent)" }}>· new</span>}
         <button type="button" onClick={() => setEditing(true)}>
           edit
         </button>
