@@ -7,6 +7,7 @@ import {
   deleteGrocery,
   toggleGrocery,
 } from "@/app/(app)/actions";
+import { GROCERY_ORDER, categorize } from "@/lib/groceryCategories";
 import type { Grocery } from "@/lib/types";
 
 export default function GroceryList({ items }: { items: Grocery[] }) {
@@ -38,6 +39,11 @@ export default function GroceryList({ items }: { items: Grocery[] }) {
 
   const open = optItems.filter((g) => !g.checked);
   const done = optItems.filter((g) => g.checked);
+
+  const sections = GROCERY_ORDER.map((cat) => ({
+    cat,
+    items: open.filter((g) => categorize(g.name) === cat),
+  })).filter((s) => s.items.length > 0);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -79,27 +85,35 @@ export default function GroceryList({ items }: { items: Grocery[] }) {
           List&apos;s empty. Add what you need.
         </div>
       ) : (
-        <ul className="list" style={{ marginTop: 14 }}>
-          {open.map((g) => (
-            <li className="row" key={g.id}>
-              <button
-                className="check"
-                aria-label="Check off"
-                onClick={() => toggle(g)}
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M4 12l6 6L20 6" />
-                </svg>
-              </button>
-              <div className="main">
-                <div className="title">{g.name}</div>
-              </div>
-              <button className="resched" onClick={() => start(() => deleteGrocery(g.id))}>
-                remove
-              </button>
-            </li>
+        <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14 }}>
+          {sections.map((s) => (
+            <div className="group" key={s.cat}>
+              <h2>
+                {s.cat} <span className="count">{s.items.length}</span>
+              </h2>
+              <ul className="list">
+                {s.items.map((g) => (
+                  <li className="row" key={g.id}>
+                    <button className="check" aria-label="Check off" onClick={() => toggle(g)}>
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 12l6 6L20 6" />
+                      </svg>
+                    </button>
+                    <div className="main">
+                      <div className="title">{g.name}</div>
+                    </div>
+                    <button
+                      className="resched"
+                      onClick={() => start(() => deleteGrocery(g.id))}
+                    >
+                      remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
       {done.length > 0 && (
