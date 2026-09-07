@@ -11,6 +11,7 @@ const FILTERS: { key: string; label: string }[] = [
   { key: "later", label: "Later" },
   { key: "nodate", label: "No date" },
   { key: "flagged", label: "Flagged" },
+  { key: "recurring", label: "Recurring" },
 ];
 
 export default function AllFilters({ counts }: { counts: Record<string, number> }) {

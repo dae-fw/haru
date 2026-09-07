@@ -16,6 +16,7 @@ export const FILTER_KEYS = [
   "later",
   "nodate",
   "flagged",
+  "recurring",
 ] as const;
 export type FilterKey = (typeof FILTER_KEYS)[number];
 
@@ -27,6 +28,7 @@ export const PREDS: Record<FilterKey, (t: Todo, today: string, wk: string) => bo
   later: (t, today, wk) => !!t.due_date && t.due_date > wk,
   nodate: (t) => !t.due_date,
   flagged: (t) => t.flagged,
+  recurring: (t) => t.recurrence != null,
 };
 
 const byDate = (a: Todo, b: Todo) =>
