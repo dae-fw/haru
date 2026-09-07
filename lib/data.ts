@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { todayISO } from "@/lib/recurrence";
-import type { Grocery, Idea, Project, Todo } from "@/lib/types";
+import type { Grocery, GroceryUsual, Idea, Project, Todo } from "@/lib/types";
 
 // cache() dedupes within a single request — the (app) layout and the page
 // can both call getOpenTodos() and it runs one query.
@@ -67,6 +67,18 @@ export const getGroceries = cache(async (): Promise<Grocery[]> => {
     .order("checked", { ascending: true })
     .order("created_at", { ascending: true });
   return (data as Grocery[]) ?? [];
+});
+
+/** Items added 2+ times, most-used first — the one-tap "Usuals". */
+export const getGroceryUsuals = cache(async (): Promise<GroceryUsual[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("haru_grocery_usual")
+    .select("name, count")
+    .gte("count", 2)
+    .order("count", { ascending: false })
+    .limit(16);
+  return (data as GroceryUsual[]) ?? [];
 });
 
 export interface Prefs {

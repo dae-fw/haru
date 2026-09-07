@@ -642,6 +642,57 @@ button.title-edit {
   flex-wrap: wrap;
   gap: 8px;
 }
+/* grocery usuals */
+.usuals {
+  margin-top: 12px;
+}
+.usuals-lbl {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+.usuals-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.usual {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  overflow: hidden;
+  font-size: 0.8rem;
+}
+.usual.on {
+  opacity: 0.45;
+}
+.usual-add {
+  background: transparent;
+  border: none;
+  padding: 6px 4px 6px 12px;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+.usual-add:disabled {
+  cursor: default;
+}
+.usual-n {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--ink-soft);
+}
+.usual-x {
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--hair);
+  padding: 0 9px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
 .snap-btn.ghost {
   border-style: solid;
 }

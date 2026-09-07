@@ -51,7 +51,7 @@ function haruSays(h: number, tz: string): string {
   const list = h >= 6 && h < 20 ? HARU_DAY : HARU_NIGHT;
   const day = new Date().toLocaleDateString("en-CA", { timeZone: tz });
   const daySeed = day.split("-").reduce((a, n) => a + Number(n), 0);
-  const seed = daySeed * 5 + Math.floor(h / 6); // shifts every 6 hours
+  const seed = daySeed * 9 + Math.floor(h / 3); // shifts every 3 hours
   return list[seed % list.length];
 }
 

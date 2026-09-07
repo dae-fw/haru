@@ -5,12 +5,19 @@ import {
   addGrocery,
   clearCheckedGroceries,
   deleteGrocery,
+  forgetUsual,
   toggleGrocery,
 } from "@/app/(app)/actions";
 import { GROCERY_ORDER, categorize } from "@/lib/groceryCategories";
-import type { Grocery } from "@/lib/types";
+import type { Grocery, GroceryUsual } from "@/lib/types";
 
-export default function GroceryList({ items }: { items: Grocery[] }) {
+export default function GroceryList({
+  items,
+  usuals = [],
+}: {
+  items: Grocery[];
+  usuals?: GroceryUsual[];
+}) {
   const [, start] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const [text, setText] = useState("");
@@ -45,17 +52,23 @@ export default function GroceryList({ items }: { items: Grocery[] }) {
     items: open.filter((g) => categorize(g.name) === cat),
   })).filter((s) => s.items.length > 0);
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
-    const name = text.trim();
-    if (!name) return;
-    setText("");
+  const onList = new Set(open.map((g) => g.name.toLowerCase()));
+
+  function add(name: string) {
+    const n = name.trim();
+    if (!n || onList.has(n.toLowerCase())) return;
     const fd = new FormData();
-    fd.set("name", name);
+    fd.set("name", n);
     start(async () => {
-      setOpt({ type: "add", name });
+      setOpt({ type: "add", name: n });
       await addGrocery(fd);
     });
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    add(text);
+    setText("");
   }
 
   function toggle(g: Grocery) {
@@ -79,6 +92,37 @@ export default function GroceryList({ items }: { items: Grocery[] }) {
           +
         </button>
       </form>
+
+      {usuals.length > 0 && (
+        <div className="usuals">
+          <div className="usuals-lbl">Usuals</div>
+          <div className="usuals-chips">
+            {usuals.map((u) => (
+              <span
+                key={u.name}
+                className={`usual${onList.has(u.name) ? " on" : ""}`}
+              >
+                <button
+                  type="button"
+                  className="usual-add"
+                  onClick={() => add(u.name)}
+                  disabled={onList.has(u.name)}
+                >
+                  {u.name} <span className="usual-n">{u.count}</span>
+                </button>
+                <button
+                  type="button"
+                  className="usual-x"
+                  aria-label={`Forget ${u.name}`}
+                  onClick={() => start(() => forgetUsual(u.name))}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {optItems.length === 0 ? (
         <div className="empty" style={{ marginTop: 16 }}>

@@ -115,6 +115,15 @@ create table if not exists public.haru_grocery (
 );
 create index if not exists haru_grocery_user_idx on public.haru_grocery (user_id, created_at);
 
+-- how often each item gets added -> one-tap "Usuals"
+create table if not exists public.haru_grocery_usual (
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  name       text not null,
+  count      int not null default 1,
+  last_added timestamptz not null default now(),
+  primary key (user_id, name)
+);
+
 -- ---------- updated_at triggers ----------
 drop trigger if exists haru_projects_updated_at on public.haru_projects;
 create trigger haru_projects_updated_at before update on public.haru_projects
@@ -136,11 +145,12 @@ alter table public.haru_google_tokens  enable row level security;
 alter table public.haru_push_subs      enable row level security;
 alter table public.haru_prefs          enable row level security;
 alter table public.haru_grocery        enable row level security;
+alter table public.haru_grocery_usual  enable row level security;
 
 do $$
 declare t text;
 begin
-  foreach t in array array['haru_projects', 'haru_todos', 'haru_ideas', 'haru_google_tokens', 'haru_push_subs', 'haru_prefs', 'haru_grocery'] loop
+  foreach t in array array['haru_projects', 'haru_todos', 'haru_ideas', 'haru_google_tokens', 'haru_push_subs', 'haru_prefs', 'haru_grocery', 'haru_grocery_usual'] loop
     execute format('drop policy if exists %I_owner on public.%I', t, t);
     execute format(
       'create policy %I_owner on public.%I

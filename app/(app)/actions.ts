@@ -401,6 +401,27 @@ export async function addGrocery(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return;
   await supabase.from("haru_grocery").insert({ user_id: user.id, name });
+
+  // bump the "usuals" tally (normalised key)
+  const key = name.toLowerCase();
+  const { data: cur } = await supabase
+    .from("haru_grocery_usual")
+    .select("count")
+    .eq("name", key)
+    .maybeSingle();
+  await supabase.from("haru_grocery_usual").upsert({
+    user_id: user.id,
+    name: key,
+    count: (cur?.count ?? 0) + 1,
+    last_added: new Date().toISOString(),
+  });
+
+  revalidatePath("/groceries");
+}
+
+export async function forgetUsual(name: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("haru_grocery_usual").delete().eq("name", name.toLowerCase());
   revalidatePath("/groceries");
 }
 

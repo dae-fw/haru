@@ -69,3 +69,8 @@ export interface Grocery {
   checked: boolean;
   created_at: string;
 }
+
+export interface GroceryUsual {
+  name: string;
+  count: number;
+}

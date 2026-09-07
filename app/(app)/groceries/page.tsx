@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { getGroceries } from "@/lib/data";
+import { getGroceries, getGroceryUsuals } from "@/lib/data";
 import GroceryList from "@/components/GroceryList";
 import Gear from "@/components/Gear";
 
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function GroceriesPage() {
   await requireUser();
-  const items = await getGroceries();
+  const [items, usuals] = await Promise.all([getGroceries(), getGroceryUsuals()]);
 
   return (
     <>
@@ -18,7 +18,7 @@ export default async function GroceriesPage() {
         <Gear />
       </header>
       <div className="body">
-        <GroceryList items={items} />
+        <GroceryList items={items} usuals={usuals} />
       </div>
     </>
   );
