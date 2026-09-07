@@ -6,10 +6,17 @@ import { nextDueDate, toISODate } from "@/lib/recurrence";
 import { createCalendarEvent, updateCalendarEvent } from "@/lib/google";
 import type { Recurrence, Todo } from "@/lib/types";
 
+/** Pages that show tasks. */
 function revalidateAll() {
   revalidatePath("/");
   revalidatePath("/all");
+  revalidatePath("/organize");
+}
+
+/** Pages that show notes/ideas. */
+function revalidateNotes() {
   revalidatePath("/capture");
+  revalidatePath("/organize");
 }
 
 export async function addTodo(formData: FormData) {
@@ -324,7 +331,7 @@ export async function addIdea(formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return;
   await supabase.from("haru_ideas").insert({ user_id: user.id, body });
-  revalidateAll();
+  revalidateNotes();
 }
 
 /** Convert a todo back into a loose idea (removes the todo). */
@@ -344,6 +351,7 @@ export async function demoteToIdea(todoId: string) {
   });
   await supabase.from("haru_todos").delete().eq("id", todoId);
   revalidateAll();
+  revalidateNotes();
 }
 
 export async function deleteTodo(id: string) {
@@ -368,6 +376,7 @@ export async function promoteIdea(id: string) {
   });
   await supabase.from("haru_ideas").delete().eq("id", id);
   revalidateAll();
+  revalidateNotes();
 }
 
 export async function updateIdea(id: string, body: string) {
@@ -375,20 +384,52 @@ export async function updateIdea(id: string, body: string) {
   const b = body.trim();
   if (!b) return;
   await supabase.from("haru_ideas").update({ body: b }).eq("id", id);
-  revalidateAll();
+  revalidateNotes();
 }
 
 /** "Keep as note" from Organize's Thoughts pass — stop asking about it. */
 export async function keepIdea(id: string) {
   const { supabase } = await requireUser();
   await supabase.from("haru_ideas").update({ sorted: true }).eq("id", id);
-  revalidateAll();
+  revalidateNotes();
+}
+
+// ---------- grocery list ----------
+
+export async function addGrocery(formData: FormData) {
+  const { user, supabase } = await requireUser();
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return;
+  await supabase.from("haru_grocery").insert({ user_id: user.id, name });
+  revalidatePath("/groceries");
+}
+
+export async function toggleGrocery(id: string, checked: boolean) {
+  const { supabase } = await requireUser();
+  await supabase.from("haru_grocery").update({ checked }).eq("id", id);
+  revalidatePath("/groceries");
+}
+
+export async function deleteGrocery(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("haru_grocery").delete().eq("id", id);
+  revalidatePath("/groceries");
+}
+
+export async function clearCheckedGroceries() {
+  const { user, supabase } = await requireUser();
+  await supabase
+    .from("haru_grocery")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("checked", true);
+  revalidatePath("/groceries");
 }
 
 export async function deleteIdea(id: string) {
   const { supabase } = await requireUser();
   await supabase.from("haru_ideas").delete().eq("id", id);
-  revalidateAll();
+  revalidateNotes();
 }
 
 /** Create a calendar event from the app. */

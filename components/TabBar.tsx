@@ -9,6 +9,9 @@ const ICONS: Record<string, React.ReactNode> = {
   "/all": <path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />,
   "/organize": <path d="M4 6h9M4 12h9M4 18h6M15 14.5l2.4 2.4L22 12" />,
   "/capture": <path d="M15.5 4.5l4 4L8 20H4v-4L15.5 4.5zM13.5 6.5l4 4" />,
+  "/groceries": (
+    <path d="M4 6h2l2.2 10.4a1 1 0 0 0 1 .8h7.6a1 1 0 0 0 1-.8L20 9H7M9 21h.01M17 21h.01" />
+  ),
 };
 
 const tabs = [
@@ -16,6 +19,7 @@ const tabs = [
   { href: "/all", label: "All" },
   { href: "/organize", label: "Organize" },
   { href: "/capture", label: "Capture" },
+  { href: "/groceries", label: "Groceries" },
 ];
 
 export default function TabBar({

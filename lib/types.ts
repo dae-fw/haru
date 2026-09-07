@@ -62,3 +62,10 @@ export interface Idea {
   sorted: boolean;
   created_at: string;
 }
+
+export interface Grocery {
+  id: string;
+  name: string;
+  checked: boolean;
+  created_at: string;
+}

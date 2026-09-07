@@ -125,8 +125,8 @@ export default function RescheduleSheet({
           onChange={(e) => setWho(e.target.value)}
         />
         <button
-          className="opt"
-          style={{ color: "var(--accent)", borderBottom: "none" }}
+          className="btn primary"
+          style={{ width: "100%", marginTop: 10 }}
           disabled={pending}
           onClick={() =>
             run(() =>
@@ -134,7 +134,7 @@ export default function RescheduleSheet({
             )
           }
         >
-          Park it →
+          Park it
         </button>
 
         <div className="sec">Repeat</div>

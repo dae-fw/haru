@@ -3,6 +3,7 @@ import { getIdeas, getProjects } from "@/lib/data";
 import AddIdea from "@/components/AddIdea";
 import SnapNote from "@/components/SnapNote";
 import IdeaRow from "@/components/IdeaRow";
+import Collapsible from "@/components/Collapsible";
 import Gear from "@/components/Gear";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,8 @@ export const dynamic = "force-dynamic";
 export default async function CapturePage() {
   await requireUser();
   const [ideas, projects] = await Promise.all([getIdeas(), getProjects()]);
+  const kept = ideas.filter((i) => i.sorted);
+  const thoughts = ideas.filter((i) => !i.sorted);
 
   return (
     <>
@@ -24,20 +27,36 @@ export default async function CapturePage() {
         <AddIdea />
         <SnapNote projects={projects} />
 
-        <div className="group">
-          <h2>Notes <span className="count">{ideas.length}</span></h2>
+        <Collapsible title="Notes" count={kept.length} defaultOpen>
+          {kept.length === 0 ? (
+            <div className="empty">Nothing kept yet.</div>
+          ) : (
+            <div className="list">
+              {kept.map((idea) => (
+                <IdeaRow key={idea.id} idea={idea} />
+              ))}
+            </div>
+          )}
+        </Collapsible>
+
+        <Collapsible
+          title="Thoughts"
+          count={thoughts.length}
+          defaultOpen={thoughts.length > 0}
+        >
           <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 8 }}>
             New jots wait here until Organize&apos;s Thoughts pass asks what to do with them.
           </div>
-          <div className="list">
-            {ideas.map((idea) => (
-              <IdeaRow key={idea.id} idea={idea} />
-            ))}
-            {ideas.length === 0 && (
-              <div className="empty">Nothing here yet. Jot something when it comes to you.</div>
-            )}
-          </div>
-        </div>
+          {thoughts.length === 0 ? (
+            <div className="empty">Nothing new to sort.</div>
+          ) : (
+            <div className="list">
+              {thoughts.map((idea) => (
+                <IdeaRow key={idea.id} idea={idea} />
+              ))}
+            </div>
+          )}
+        </Collapsible>
       </div>
     </>
   );

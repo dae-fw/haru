@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { todayISO } from "@/lib/recurrence";
-import type { Idea, Project, Todo } from "@/lib/types";
+import type { Grocery, Idea, Project, Todo } from "@/lib/types";
 
 // cache() dedupes within a single request — the (app) layout and the page
 // can both call getOpenTodos() and it runs one query.
@@ -57,6 +57,16 @@ export const getUnsortedIdeas = cache(async (): Promise<Idea[]> => {
     .eq("sorted", false)
     .order("created_at", { ascending: true });
   return (data as Idea[]) ?? [];
+});
+
+export const getGroceries = cache(async (): Promise<Grocery[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("haru_grocery")
+    .select("id, name, checked, created_at")
+    .order("checked", { ascending: true })
+    .order("created_at", { ascending: true });
+  return (data as Grocery[]) ?? [];
 });
 
 export interface Prefs {

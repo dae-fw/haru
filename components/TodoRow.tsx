@@ -194,6 +194,11 @@ export default function TodoRow({
           )}
           {laterLabel && <span className="chip">{laterLabel}</span>}
           {!done && todo.due_time && <span className="chip">{fmt12(todo.due_time)}</span>}
+          {!done && todo.reminder_min != null && (
+            <span className="chip" aria-label="has a reminder" title="Reminder set">
+              ⏰
+            </span>
+          )}
           {todo.flagged && <span className="chip flag">★ flagged</span>}
           {todo.recurrence && (
             <span className="chip">

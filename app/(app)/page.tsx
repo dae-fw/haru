@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { getDoneToday, getOpenTodos, getProjects, isWaiting } from "@/lib/data";
-import { getTodayEvents, getTomorrowEvents, isGoogleConnected } from "@/lib/google";
+import { getTodayEvents, getTomorrowEvents } from "@/lib/google";
 import { hourInTz, todayInTz } from "@/lib/tz";
 import { getTimeZone } from "@/lib/tz.server";
 import { unparkTodo } from "@/app/(app)/actions";
@@ -10,7 +10,6 @@ import QuickAddTodo from "@/components/QuickAddTodo";
 import QueuedTasks from "@/components/QueuedTasks";
 import EarlierToday from "@/components/EarlierToday";
 import Horizon from "@/components/Horizon";
-import AddEventButton from "@/components/AddEventButton";
 import Gear from "@/components/Gear";
 import type { Project, Todo } from "@/lib/types";
 
@@ -72,13 +71,12 @@ function rank(t: Todo, today: string): number {
 export default async function TodayPage() {
   const { user } = await requireUser();
   const tz = await getTimeZone();
-  const [projects, open, doneToday, events, tomorrowEvents, connected] = await Promise.all([
+  const [projects, open, doneToday, events, tomorrowEvents] = await Promise.all([
     getProjects(),
     getOpenTodos(),
     getDoneToday(),
     getTodayEvents(tz),
     getTomorrowEvents(tz),
-    isGoogleConnected(),
   ]);
   const byId = new Map<string, Project>(projects.map((p) => [p.id, p]));
   const today = todayInTz(tz);
@@ -192,20 +190,11 @@ export default async function TodayPage() {
     user.email,
   );
   const doneCount = doneToday.length;
-  const totalToday = todayList.length + doneCount;
   const trulyEmpty =
     todayList.length === 0 &&
     waitingList.length === 0 &&
     doneCount === 0 &&
     events.length === 0;
-
-  const summary = todayList.length
-    ? `${overdue.length ? `${overdue.length} overdue, then ` : ""}${rest.length} due today${
-        upcomingEvents.length ? `, ${upcomingEvents.length} event${upcomingEvents.length > 1 ? "s" : ""} ahead` : ""
-      }.`
-    : events.length
-      ? `No tasks due — ${events.length} event${events.length > 1 ? "s" : ""} on the calendar.`
-      : "A clear list today — nice.";
 
   return (
     <>
@@ -222,26 +211,11 @@ export default async function TodayPage() {
           {greeting(hourInTz(tz))}, {name}
         </h1>
         <div className="cat-nudge">{haruSays(hourInTz(tz), tz)}</div>
-        <div className="sub">
-          {open.length} open · {waitingList.length} waiting · {doneCount} done
-        </div>
         <Gear />
       </header>
 
       <div className="body">
-        {!trulyEmpty && (
-          <div className="summary">
-            {summary}{" "}
-            {totalToday > 0 && (
-              <span className="prog">
-                {doneCount} of {totalToday} done
-              </span>
-            )}
-          </div>
-        )}
-
         <QuickAddTodo projects={projects} />
-        {connected && <AddEventButton />}
         <QueuedTasks />
 
         <EarlierToday events={pastEvents} done={doneToday} projects={projects} tz={tz} />

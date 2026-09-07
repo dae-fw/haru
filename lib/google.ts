@@ -127,6 +127,31 @@ interface CalListEntry {
   selected?: boolean;
 }
 
+// The calendar list barely changes; cache it briefly so Today's two event
+// sweeps (today + tomorrow) don't each re-fetch it.
+let calListCache: { at: number; cals: CalListEntry[] } | null = null;
+const CAL_LIST_TTL = 90_000;
+
+async function calendarList(auth: Record<string, string>): Promise<CalListEntry[]> {
+  if (calListCache && Date.now() - calListCache.at < CAL_LIST_TTL) {
+    return calListCache.cals;
+  }
+  let cals: CalListEntry[] = [{ id: "primary", primary: true }];
+  const res = await fetch(
+    `${CAL_API}/users/me/calendarList?minAccessRole=reader&fields=items(id,summary,primary,selected)`,
+    { headers: auth },
+  );
+  if (res.ok) {
+    const list = (await res.json()) as { items?: CalListEntry[] };
+    const visible = (list.items ?? []).filter((c) => c.selected !== false);
+    if (visible.length) cals = visible;
+  } else {
+    console.error("google calendarList failed", await res.text());
+  }
+  calListCache = { at: Date.now(), cals };
+  return cals;
+}
+
 /** Today's events across every calendar in the account that's shown in Google Calendar. */
 /** Events across every visible calendar between two local dates (inclusive, YYYY-MM-DD). */
 export const getEventsBetween = cache(
@@ -136,19 +161,8 @@ export const getEventsBetween = cache(
     if (!token) return [];
     const auth = { Authorization: `Bearer ${token}` };
 
-    // 1. which calendars does this account have?
-    let cals: CalListEntry[] = [{ id: "primary", primary: true }];
-    const listRes = await fetch(
-      `${CAL_API}/users/me/calendarList?minAccessRole=reader&fields=items(id,summary,primary,selected)`,
-      { headers: auth },
-    );
-    if (listRes.ok) {
-      const list = (await listRes.json()) as { items?: CalListEntry[] };
-      const visible = (list.items ?? []).filter((c) => c.selected !== false);
-      if (visible.length) cals = visible;
-    } else {
-      console.error("google calendarList failed", await listRes.text());
-    }
+    // 1. which calendars does this account have? (cached)
+    const cals = await calendarList(auth);
 
     // 2. the window in the viewer's timezone
     const off = tzOffset(tz, new Date());
