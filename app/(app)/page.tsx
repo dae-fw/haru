@@ -102,8 +102,13 @@ export default async function TodayPage() {
         rank(a, today) - rank(b, today) ||
         (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"),
     );
+  const flaggedFirst = (a: Todo, b: Todo) =>
+    (b.flagged ? 1 : 0) - (a.flagged ? 1 : 0);
   const waitingList = open.filter(isWaiting);
-  const overdue = todayList.filter((t) => rank(t, today) === 0);
+  // flagged tasks rise to the top of their section
+  const overdue = todayList
+    .filter((t) => rank(t, today) === 0)
+    .sort((a, b) => flaggedFirst(a, b) || (a.due_date ?? "").localeCompare(b.due_date ?? ""));
   const rest = todayList.filter((t) => rank(t, today) !== 0);
 
   // "Coming up" horizon: dated todos beyond today that aren't already on the list.
@@ -166,7 +171,7 @@ export default async function TodayPage() {
   );
 
   const timed = rest.filter((t) => t.due_time);
-  const untimed = rest.filter((t) => !t.due_time);
+  const untimed = rest.filter((t) => !t.due_time).sort(flaggedFirst);
   const lateTimed = timed
     .filter((t) => t.due_time! < nowHM)
     .sort((a, b) => a.due_time!.localeCompare(b.due_time!));
