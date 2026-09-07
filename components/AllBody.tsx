@@ -77,7 +77,7 @@ export default function AllBody({
     const list = ids();
     bulkComplete(list).then(() => {
       setUndo(list);
-      setTimeout(() => setUndo((u) => (u === list ? null : u)), 1500);
+      setTimeout(() => setUndo((u) => (u === list ? null : u)), 1000);
       after();
     });
   };

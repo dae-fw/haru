@@ -608,7 +608,7 @@ button.title-edit {
   border-radius: 2px;
   background: var(--accent);
   transform-origin: left;
-  animation: undo-drain 1.5s linear forwards;
+  animation: undo-drain 1s linear forwards;
 }
 @keyframes undo-drain {
   from { transform: scaleX(1); }
