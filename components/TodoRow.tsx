@@ -44,7 +44,7 @@ export default function TodoRow({
   selected?: boolean;
   onToggleSelect?: () => void;
 }) {
-  const GRACE_MS = 2000;
+  const GRACE_MS = 1500;
   const [, start] = useTransition();
   const [sheet, setSheet] = useState(false);
   const [edit, setEdit] = useState(false);
@@ -63,7 +63,7 @@ export default function TodoRow({
     );
     start(() => toggleSubtask(todo.id, subId));
   }
-  // completing, inside the 2s undo window — not yet sent to the server
+  // completing, inside the 1.5s undo window — not yet sent to the server
   const [grace, setGrace] = useState(false);
   const graceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // completed while offline, waiting to sync
