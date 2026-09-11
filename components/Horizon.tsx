@@ -10,14 +10,12 @@ export default function Horizon({
   tomorrow,
   tomorrowEvents = [],
   week,
-  month,
   projects,
   tz,
 }: {
   tomorrow: Todo[];
   tomorrowEvents?: CalEvent[];
   week: Todo[];
-  month: Todo[];
   projects: Project[];
   tz: string;
 }) {
@@ -26,7 +24,7 @@ export default function Horizon({
   const byId = new Map(projects.map((p) => [p.id, p]));
 
   const tmrCount = tomorrow.length + tomorrowEvents.length;
-  if (tmrCount === 0 && week.length === 0 && month.length === 0) return null;
+  if (tmrCount === 0 && week.length === 0) return null;
 
   function toggle() {
     setOpen((o) => {
@@ -41,7 +39,6 @@ export default function Horizon({
   const parts: string[] = [];
   if (tmrCount) parts.push(`${tmrCount} tomorrow`);
   if (week.length) parts.push(`${week.length} this week`);
-  if (month.length) parts.push(`${month.length} later this month`);
 
   const list = (label: string, todos: Todo[]) =>
     todos.length > 0 && (
@@ -92,7 +89,6 @@ export default function Horizon({
               </>
             )}
             {list("This week", week)}
-            {list("Later this month", month)}
           </div>
         </div>
       </div>

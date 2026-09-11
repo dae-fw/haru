@@ -119,8 +119,6 @@ export default async function TodayPage() {
   const weekEnd = new Date(today + "T00:00:00Z");
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
   const weekEndISO = weekEnd.toISOString().slice(0, 10);
-  const [yr, mo] = today.split("-").map(Number);
-  const monthEndISO = new Date(Date.UTC(yr, mo, 0)).toISOString().slice(0, 10);
   const sortByDue = (a: Todo, b: Todo) =>
     (Number(b.flagged) - Number(a.flagged)) ||
     (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999");
@@ -140,16 +138,6 @@ export default async function TodayPage() {
         t.due_date != null &&
         t.due_date > tomorrowISO &&
         t.due_date <= weekEndISO,
-    )
-    .sort(sortByDue);
-  const monthAhead = open
-    .filter(
-      (t) =>
-        !onTodayIds.has(t.id) &&
-        t.status === "open" &&
-        t.due_date != null &&
-        t.due_date > weekEndISO &&
-        t.due_date <= monthEndISO,
     )
     .sort(sortByDue);
 
@@ -333,7 +321,6 @@ export default async function TodayPage() {
           tomorrow={tomorrowAhead}
           tomorrowEvents={tomorrowEvents}
           week={weekAhead}
-          month={monthAhead}
           projects={projects}
           tz={tz}
         />
